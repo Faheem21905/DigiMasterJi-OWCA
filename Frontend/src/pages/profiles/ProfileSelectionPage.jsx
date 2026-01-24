@@ -323,6 +323,7 @@ export default function ProfileSelectionPage() {
                 min-h-[200px]
               "
             >
+
               <div className="w-24 h-24 rounded-full bg-white/10 flex items-center justify-center mb-4">
                 <Plus className="w-10 h-10 text-white/50" />
               </div>
