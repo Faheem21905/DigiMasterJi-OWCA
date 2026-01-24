@@ -11,7 +11,7 @@ export { ProfileSelectionPage, CreateProfilePage, EditProfilePage } from './prof
 export { ChatPage } from './chat';
 
 // Quiz & Gamification Pages
-export { QuizListPage, QuizTakePage, GamificationDashboard } from './quiz';
+export { QuizListPage, QuizTakePage, QuizRevisionPage, GamificationDashboard } from './quiz';
 
 // Admin Pages
 export { 

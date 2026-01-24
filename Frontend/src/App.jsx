@@ -9,6 +9,7 @@ import {
   ChatPage,
   QuizListPage,
   QuizTakePage,
+  QuizRevisionPage,
   GamificationDashboard,
   AdminDashboardPage,
   UploadDocumentPage,
@@ -112,6 +113,14 @@ function App() {
           element={
             <PrivateRoute>
               <QuizListPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/quiz/revision"
+          element={
+            <PrivateRoute>
+              <QuizRevisionPage />
             </PrivateRoute>
           }
         />

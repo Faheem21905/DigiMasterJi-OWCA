@@ -362,3 +362,114 @@ class ProfilesDatabase:
             profile_ids.append(str(doc["_id"]))
         
         return profile_ids
+
+    @staticmethod
+    async def reset_streak(profile_id: str) -> Optional[ProfileInDB]:
+        """
+        Reset a profile's streak to 0.
+        Called when streak is broken (no quiz completed).
+        
+        Args:
+            profile_id: Profile's ObjectId as string
+            
+        Returns:
+            Updated ProfileInDB or None
+        """
+        if not ObjectId.is_valid(profile_id):
+            return None
+            
+        collection = await ProfilesDatabase.get_collection()
+        
+        result = await collection.find_one_and_update(
+            {"_id": ObjectId(profile_id)},
+            {
+                "$set": {
+                    "gamification.current_streak_days": 0,
+                    "updated_at": datetime.utcnow()
+                }
+            },
+            return_document=True
+        )
+        
+        if result:
+            return ProfileInDB(**result)
+        return None
+
+    @staticmethod
+    async def update_quiz_stats_v2(
+        profile_id: str,
+        xp_earned: int,
+        is_today_quiz: bool,
+        is_backlog: bool
+    ) -> Optional[ProfileInDB]:
+        """
+        Update profile after quiz completion with proper streak logic.
+        
+        Streak rules:
+        - Only today's quiz can increment/maintain streak
+        - Backlog quizzes give XP but don't affect streak
+        - Streak resets to 0 if quiz missed
+        
+        Args:
+            profile_id: Profile's ObjectId as string
+            xp_earned: XP points earned from quiz
+            is_today_quiz: Whether this is today's daily quiz
+            is_backlog: Whether this is a backlog quiz
+            
+        Returns:
+            Updated ProfileInDB or None
+        """
+        if not ObjectId.is_valid(profile_id):
+            return None
+            
+        collection = await ProfilesDatabase.get_collection()
+        
+        # Get current profile to check streak
+        profile = await ProfilesDatabase.get_profile_by_id(profile_id)
+        if not profile:
+            return None
+        
+        update_ops = {
+            "$inc": {"gamification.xp": xp_earned},
+            "$set": {
+                "gamification.last_activity_date": datetime.utcnow(),
+                "updated_at": datetime.utcnow()
+            }
+        }
+        
+        # Only update streak for today's quiz (not backlog)
+        if is_today_quiz and not is_backlog:
+            from datetime import date as date_type
+            
+            last_activity = profile.gamification.last_activity_date
+            today = date_type.today()
+            
+            if last_activity:
+                last_date = last_activity.date() if isinstance(last_activity, datetime) else last_activity
+                days_diff = (today - last_date).days
+                
+                if days_diff == 1:
+                    # Consecutive day - increment streak
+                    update_ops["$inc"]["gamification.current_streak_days"] = 1
+                elif days_diff == 0:
+                    # Same day - keep streak (first quiz completion today starts streak at 1)
+                    if profile.gamification.current_streak_days == 0:
+                        update_ops["$set"]["gamification.current_streak_days"] = 1
+                else:
+                    # Streak broken - reset to 1
+                    update_ops["$set"]["gamification.current_streak_days"] = 1
+            else:
+                # First activity - start streak
+                update_ops["$set"]["gamification.current_streak_days"] = 1
+        
+        # For backlog quizzes, don't modify streak at all (just give XP)
+        
+        result = await collection.find_one_and_update(
+            {"_id": ObjectId(profile_id)},
+            update_ops,
+            return_document=True
+        )
+        
+        if result:
+            return ProfileInDB(**result)
+        return None

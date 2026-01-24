@@ -16,6 +16,7 @@ import Dexie from 'dexie';
  * - profiles: Student profiles with gamification data
  * - conversations: Chat conversations
  * - messages: Individual messages in conversations
+ * - quizzes: Quiz data with questions for offline access and revision
  * - syncMeta: Sync metadata (last sync time, etc.)
  */
 class DigiMasterJiDB extends Dexie {
@@ -24,7 +25,7 @@ class DigiMasterJiDB extends Dexie {
 
     // Define database schema
     // Indexed fields are marked with & (unique) or just listed for indexing
-    this.version(1).stores({
+    this.version(2).stores({
       // Profiles table
       // Indexed: _id (primary), master_user_id
       profiles: '_id, master_user_id, name, updated_at',
@@ -36,6 +37,10 @@ class DigiMasterJiDB extends Dexie {
       // Messages table
       // Indexed: _id (primary), conversation_id, profile_id, timestamp
       messages: '_id, conversation_id, profile_id, timestamp, role',
+
+      // Quizzes table
+      // Indexed: _id (primary), profile_id, quiz_date, status
+      quizzes: '_id, profile_id, quiz_date, status, completed_at, is_backlog',
 
       // Sync metadata table
       // Stores sync state information
@@ -50,6 +55,7 @@ class DigiMasterJiDB extends Dexie {
     this.profiles = this.table('profiles');
     this.conversations = this.table('conversations');
     this.messages = this.table('messages');
+    this.quizzes = this.table('quizzes');
     this.syncMeta = this.table('syncMeta');
     this.pendingOperations = this.table('pendingOperations');
   }
@@ -61,6 +67,7 @@ class DigiMasterJiDB extends Dexie {
     await this.profiles.clear();
     await this.conversations.clear();
     await this.messages.clear();
+    await this.quizzes.clear();
     await this.syncMeta.clear();
     await this.pendingOperations.clear();
   }
@@ -72,6 +79,7 @@ class DigiMasterJiDB extends Dexie {
     await this.profiles.clear();
     await this.conversations.clear();
     await this.messages.clear();
+    await this.quizzes.clear();
     // Keep syncMeta for tracking
   }
 }

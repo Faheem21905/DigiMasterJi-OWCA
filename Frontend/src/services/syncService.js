@@ -14,9 +14,11 @@
 
 import { db } from '../db';
 import { syncApi } from '../api/sync';
+import { quizzesApi } from '../api/quizzes';
 
 // Sync configuration - can be overridden via environment variable
 const SYNC_DAYS = parseInt(import.meta.env.VITE_SYNC_DAYS || '180', 10); // Number of days of messages to sync
+const QUIZ_SYNC_DAYS = 30; // Keep quizzes for 30 days
 const SYNC_META_KEY = 'lastSync';
 
 /**
@@ -130,6 +132,9 @@ class SyncService {
 
       // Store data locally
       await this._storeDataLocally(data);
+
+      // Sync quizzes separately for each profile
+      await this._syncQuizzes(data.profiles);
 
       // Update sync metadata
       await db.syncMeta.put({
@@ -250,6 +255,94 @@ class SyncService {
         }
       }
     });
+  }
+
+  /**
+   * Sync quizzes for all profiles
+   * @param {Array} profiles - Array of profile objects
+   */
+  async _syncQuizzes(profiles) {
+    try {
+      console.log('[Sync] Syncing quizzes...');
+      
+      // Clear existing quizzes first
+      await db.quizzes.clear();
+      
+      let totalQuizzes = 0;
+      
+      for (const profile of profiles) {
+        try {
+          // Fetch quizzes for this profile
+          const response = await quizzesApi.getQuizzesForSync(QUIZ_SYNC_DAYS);
+          const quizzes = response.data || [];
+          
+          for (const quiz of quizzes) {
+            const quizRecord = {
+              _id: quiz._id,
+              profile_id: quiz.profile_id,
+              topic: quiz.topic,
+              difficulty: quiz.difficulty,
+              quiz_date: quiz.quiz_date,
+              created_at: quiz.created_at,
+              status: quiz.status,
+              score: quiz.score,
+              completed_at: quiz.completed_at,
+              xp_earned: quiz.xp_earned,
+              questions: quiz.questions || [],
+              is_backlog: quiz.is_backlog || false,
+            };
+            
+            await db.quizzes.put(quizRecord);
+            totalQuizzes++;
+          }
+        } catch (err) {
+          console.error(`[Sync] Error syncing quizzes for profile ${profile._id}:`, err);
+        }
+      }
+      
+      console.log(`[Sync] Synced ${totalQuizzes} quizzes`);
+    } catch (err) {
+      console.error('[Sync] Error syncing quizzes:', err);
+    }
+  }
+
+  /**
+   * Get local quizzes for a profile
+   * @param {string} profileId - Profile ID
+   * @param {string} status - Optional status filter ('pending', 'completed', or null for all)
+   */
+  async getLocalQuizzes(profileId, status = null) {
+    let query = db.quizzes.where('profile_id').equals(profileId);
+    
+    const quizzes = await query.toArray();
+    
+    if (status) {
+      return quizzes.filter(q => q.status === status);
+    }
+    
+    return quizzes.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  }
+
+  /**
+   * Get completed quizzes for revision (from local DB)
+   * @param {string} profileId - Profile ID
+   */
+  async getLocalQuizzesForRevision(profileId) {
+    const quizzes = await db.quizzes
+      .where('profile_id')
+      .equals(profileId)
+      .and(q => q.status === 'completed')
+      .toArray();
+    
+    return quizzes.sort((a, b) => new Date(b.completed_at) - new Date(a.completed_at));
+  }
+
+  /**
+   * Update a local quiz after completion
+   * @param {Object} quizData - Updated quiz data
+   */
+  async updateLocalQuiz(quizData) {
+    await db.quizzes.put(quizData);
   }
 
   /**

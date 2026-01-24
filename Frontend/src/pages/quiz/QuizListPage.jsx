@@ -15,6 +15,7 @@ import {
   CheckCircle2,
   AlertCircle,
   Zap,
+  History,
 } from 'lucide-react';
 import { Button, Card, NetworkStatusBadge, LowBandwidthToggle } from '../../components/ui';
 import { useProfile } from '../../hooks/useProfile';
@@ -86,6 +87,26 @@ export default function QuizListPage() {
     setRefreshing(true);
     await fetchQuizzes();
     setRefreshing(false);
+  };
+
+  const formatQuizDate = (dateStr) => {
+    const quizDate = new Date(dateStr);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    if (quizDate.toDateString() === today.toDateString()) {
+      return 'Today';
+    } else if (quizDate.toDateString() === yesterday.toDateString()) {
+      return 'Yesterday';
+    } else {
+      return quizDate.toLocaleDateString('en-US', {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+      });
+    }
   };
 
   const handleStartQuiz = (quiz) => {
@@ -306,7 +327,9 @@ export default function QuizListPage() {
             </h2>
 
             <div className="space-y-3">
-              {pendingQuizzes.map((quiz, index) => (
+              {pendingQuizzes.map((quiz, index) => {
+                const isMissedQuiz = quiz.is_backlog || (quiz.quiz_date && new Date(quiz.quiz_date).toDateString() !== new Date().toDateString());
+                return (
                 <motion.div
                   key={quiz._id || quiz.id}
                   initial={{ opacity: 0, x: -20 }}
@@ -314,24 +337,51 @@ export default function QuizListPage() {
                   transition={{ delay: 0.1 * index }}
                   whileHover={{ scale: 1.01, x: 4 }}
                   onClick={() => handleStartQuiz(quiz)}
-                  className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 cursor-pointer hover:border-violet-500/30 transition-all"
+                  className={`backdrop-blur-xl rounded-2xl p-4 cursor-pointer transition-all ${
+                    isMissedQuiz 
+                      ? 'bg-orange-500/10 border border-orange-500/20 hover:border-orange-500/40' 
+                      : 'bg-white/5 border border-white/10 hover:border-violet-500/30'
+                  }`}
                 >
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                      isMissedQuiz 
+                        ? 'bg-gradient-to-br from-orange-400 to-red-500' 
+                        : 'bg-gradient-to-br from-amber-400 to-orange-500'
+                    }`}>
                       <Trophy className="w-6 h-6 text-white" />
                     </div>
                     
                     <div className="flex-1">
-                      <h3 className="font-medium text-white">{quiz.topic}</h3>
-                      <p className="text-sm text-white/50">
-                        {quiz.total_questions} questions • {quiz.difficulty}
-                      </p>
+                      <h3 className="font-medium text-white flex items-center gap-2">
+                        {quiz.topic}
+                        {isMissedQuiz && (
+                          <span className="px-2 py-0.5 text-xs bg-orange-500/20 text-orange-400 rounded-full">
+                            Missed
+                          </span>
+                        )}
+                      </h3>
+                      <div className="flex items-center gap-2 text-sm text-white/50">
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-3 h-3" />
+                          {formatQuizDate(quiz.quiz_date)}
+                        </span>
+                        <span>•</span>
+                        <span>{quiz.total_questions} questions</span>
+                        <span>•</span>
+                        <span>{quiz.difficulty}</span>
+                      </div>
+                      {isMissedQuiz && (
+                        <p className="text-xs text-orange-400/70 mt-1">
+                          Won't affect streak
+                        </p>
+                      )}
                     </div>
 
                     <ChevronRight className="w-5 h-5 text-white/40" />
                   </div>
                 </motion.div>
-              ))}
+                );})}
             </div>
           </motion.div>
         )}
@@ -347,6 +397,32 @@ export default function QuizListPage() {
             <p className="text-red-300">{error}</p>
           </motion.div>
         )}
+
+        {/* Revision Link */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="mt-6"
+        >
+          <button
+            onClick={() => navigate('/quiz/revision')}
+            className="w-full bg-gradient-to-r from-indigo-500/10 to-violet-500/10 hover:from-indigo-500/20 hover:to-violet-500/20 backdrop-blur-xl border border-indigo-500/20 rounded-2xl p-4 transition-all"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center">
+                  <History className="w-6 h-6 text-white" />
+                </div>
+                <div className="text-left">
+                  <h3 className="font-semibold text-white">Review Past Quizzes</h3>
+                  <p className="text-sm text-white/50">Revise your completed quizzes</p>
+                </div>
+              </div>
+              <ChevronRight className="w-5 h-5 text-white/40" />
+            </div>
+          </button>
+        </motion.div>
 
         {/* Motivational Section */}
         <motion.div

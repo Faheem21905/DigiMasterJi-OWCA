@@ -98,6 +98,7 @@ class QuizInDB(BaseModel):
     score: Optional[int] = Field(default=None, ge=0, le=100)
     completed_at: Optional[datetime] = None
     xp_earned: Optional[int] = Field(default=None, ge=0)
+    is_backlog: bool = Field(default=False, description="Whether this is a backlog quiz (missed day)")
     
     @field_validator('quiz_date', mode='before')
     @classmethod
@@ -146,6 +147,7 @@ class QuizResponse(BaseModel):
     completed_at: Optional[datetime] = None
     xp_earned: Optional[int] = None
     total_questions: int
+    is_backlog: bool = False
     
     class Config:
         populate_by_name = True
@@ -161,7 +163,8 @@ class QuizResponse(BaseModel):
                 "score": None,
                 "completed_at": None,
                 "xp_earned": None,
-                "total_questions": 5
+                "total_questions": 5,
+                "is_backlog": False
             }
         }
 
@@ -206,6 +209,7 @@ class QuizSubmissionResponse(BaseModel):
     current_xp: int
     streak_days: int
     streak_maintained: bool
+    is_backlog: bool = False
     feedback: List[dict] = Field(..., description="Per-question feedback")
     
     class Config:
@@ -219,6 +223,7 @@ class QuizSubmissionResponse(BaseModel):
                 "current_xp": 1540,
                 "streak_days": 4,
                 "streak_maintained": True,
+                "is_backlog": False,
                 "feedback": [
                     {
                         "question_id": "q1",
@@ -229,3 +234,52 @@ class QuizSubmissionResponse(BaseModel):
                 ]
             }
         }
+
+
+class QuizRevisionQuestion(BaseModel):
+    """Question model for revision with full details including user's answer."""
+    question_id: str
+    question_text: str
+    options: List[str]
+    correct_answer: str
+    user_answer: Optional[str] = None
+    is_correct: bool = False
+
+
+class QuizRevisionResponse(BaseModel):
+    """Quiz model for revision with all question details."""
+    id: str = Field(..., alias="_id")
+    profile_id: str
+    topic: str
+    difficulty: str
+    quiz_date: date
+    created_at: datetime
+    completed_at: Optional[datetime] = None
+    score: int
+    xp_earned: int
+    questions: List[QuizRevisionQuestion]
+    total_questions: int
+    correct_count: int
+    is_backlog: bool = False
+    
+    class Config:
+        populate_by_name = True
+
+
+class SyncQuizResponse(BaseModel):
+    """Quiz model for sync response with all data."""
+    id: str = Field(..., alias="_id")
+    profile_id: str
+    topic: str
+    difficulty: str
+    quiz_date: date
+    created_at: datetime
+    status: str
+    score: Optional[int] = None
+    completed_at: Optional[datetime] = None
+    xp_earned: Optional[int] = None
+    questions: List[QuizQuestion] = Field(default_factory=list)
+    is_backlog: bool = False
+    
+    class Config:
+        populate_by_name = True

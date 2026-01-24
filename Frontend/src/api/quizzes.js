@@ -58,4 +58,62 @@ export const quizzesApi = {
       params: { scope },
     });
   },
+
+  /**
+   * Get all completed quizzes with full questions for revision
+   * @param {number} days - Number of days to look back (default: 30)
+   */
+  getQuizzesForRevision: (days = 30) => {
+    return apiClient.get('/quizzes/revision/all', {
+      params: { days },
+    });
+  },
+
+  /**
+   * Get dates where quizzes were missed (backlog)
+   * @param {number} days - Number of days to check (default: 30)
+   */
+  getBacklogDates: (days = 30) => {
+    return apiClient.get('/quizzes/backlog/dates', {
+      params: { days },
+    });
+  },
+
+  /**
+   * Generate a backlog quiz for a missed date
+   * Note: Backlog quizzes award XP but don't affect streak
+   * @param {string} targetDate - Date in YYYY-MM-DD format
+   */
+  generateBacklogQuiz: (targetDate) => {
+    return apiClient.post('/quizzes/backlog/generate', null, {
+      params: { target_date: targetDate },
+    });
+  },
+
+  /**
+   * Get all quizzes for offline sync (last 30 days)
+   * @param {number} days - Number of days (default: 30)
+   */
+  getQuizzesForSync: (days = 30) => {
+    return apiClient.get('/quizzes/sync/all', {
+      params: { days },
+    });
+  },
+
+  /**
+   * Check current streak status
+   */
+  checkStreakStatus: () => {
+    return apiClient.get('/quizzes/streak/check');
+  },
+
+  /**
+   * Cleanup old quizzes (admin function)
+   * @param {number} days - Keep quizzes from last N days (default: 30)
+   */
+  cleanupOldQuizzes: (days = 30) => {
+    return apiClient.delete('/quizzes/cleanup/old', {
+      params: { days },
+    });
+  },
 };

@@ -2,6 +2,7 @@
 Background Task Scheduler - Daily Quiz Generation
 ==================================================
 Automatically generates daily quizzes for all profiles using APScheduler.
+Also handles streak reset and old quiz cleanup.
 """
 
 import logging
@@ -15,12 +16,67 @@ from app.services.quiz_service import quiz_service
 
 logger = logging.getLogger(__name__)
 
+# Configuration
+QUIZ_RETENTION_DAYS = 30  # Keep quizzes for 30 days
+
 
 class QuizScheduler:
     """Scheduler for background quiz generation tasks."""
     
     def __init__(self):
         self.scheduler = AsyncIOScheduler()
+    
+    async def check_and_reset_streaks(self):
+        """
+        Check all profiles and reset streaks where quiz was not completed yesterday.
+        Should run at the start of each day (after midnight).
+        """
+        try:
+            logger.info("[QUIZ SCHEDULER] Checking streaks for all profiles")
+            
+            profile_ids = await ProfilesDatabase.get_all_profile_ids()
+            reset_count = 0
+            
+            for profile_id in profile_ids:
+                try:
+                    # Check if streak should be broken
+                    streak_broken = await QuizzesDatabase.check_streak_broken(profile_id)
+                    
+                    if streak_broken:
+                        # Get current profile
+                        profile = await ProfilesDatabase.get_profile_by_id(profile_id)
+                        if profile and profile.gamification.current_streak_days > 0:
+                            # Reset streak to 0
+                            await ProfilesDatabase.reset_streak(profile_id)
+                            logger.info(f"[QUIZ SCHEDULER] Reset streak for profile {profile_id}")
+                            reset_count += 1
+                            
+                except Exception as e:
+                    logger.error(f"[QUIZ SCHEDULER] Error checking streak for profile {profile_id}: {e}")
+            
+            logger.info(f"[QUIZ SCHEDULER] Streak check completed. Reset {reset_count} profiles.")
+            
+        except Exception as e:
+            logger.error(f"[QUIZ SCHEDULER] Error in streak check task: {e}")
+            import traceback
+            traceback.print_exc()
+    
+    async def cleanup_old_quizzes(self):
+        """
+        Delete quizzes older than QUIZ_RETENTION_DAYS (30 days).
+        Should run daily to keep database clean.
+        """
+        try:
+            logger.info(f"[QUIZ SCHEDULER] Cleaning up quizzes older than {QUIZ_RETENTION_DAYS} days")
+            
+            deleted_count = await QuizzesDatabase.delete_old_quizzes(QUIZ_RETENTION_DAYS)
+            
+            logger.info(f"[QUIZ SCHEDULER] Deleted {deleted_count} old quizzes")
+            
+        except Exception as e:
+            logger.error(f"[QUIZ SCHEDULER] Error in cleanup task: {e}")
+            import traceback
+            traceback.print_exc()
     
     async def generate_daily_quizzes(self):
         """
@@ -29,6 +85,12 @@ class QuizScheduler:
         """
         try:
             logger.info("[QUIZ SCHEDULER] Starting daily quiz generation task")
+            
+            # First, check and reset streaks
+            await self.check_and_reset_streaks()
+            
+            # Then, cleanup old quizzes
+            await self.cleanup_old_quizzes()
             
             # Get all profile IDs
             profile_ids = await ProfilesDatabase.get_all_profile_ids()
