@@ -29,8 +29,8 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(profiles.router)
 app.include_router(chat.router)
-
-
+app.include_router(admin.router)
+app.include_router(sync.router)
 app.include_router(quizzes.router)
 
 # Initialize Quiz Scheduler
