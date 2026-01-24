@@ -102,7 +102,7 @@ async def test_sync_pull(access_token):
     print("\n=== Testing /sync/pull ===")
     
     async with httpx.AsyncClient(follow_redirects=True) as client:
-        # Test with default parameters (15 days)
+        # Test with default parameters (180 days, configurable via SYNC_DEFAULT_DAYS env var)
         response = await client.get(
             f"{BASE_URL}/sync/pull",
             headers={"Authorization": f"Bearer {access_token}"}

@@ -45,7 +45,7 @@ class SyncMessageResponse(BaseModel):
 class SyncConversationResponse(BaseModel):
     """
     Conversation model for sync response.
-    Includes nested messages from the past 15 days.
+    Includes nested messages from the configured sync period (default 180 days).
     """
     id: str = Field(..., alias="_id")
     profile_id: str
@@ -136,7 +136,7 @@ class SyncPullResponse(BaseModel):
     - User info (master account)
     - Profiles (all student profiles under this account)
       - Conversations (all conversations for each profile)
-        - Messages (past 15 days only, no audio)
+        - Messages (configurable period, default 180 days, no audio)
     """
     success: bool = True
     sync_timestamp: datetime = Field(default_factory=datetime.utcnow)
@@ -154,7 +154,7 @@ class SyncPullResponse(BaseModel):
     total_profiles: int = 0
     total_conversations: int = 0
     total_messages: int = 0
-    sync_period_days: int = 15
+    sync_period_days: int = 180
     
     class Config:
         json_schema_extra = {
@@ -169,6 +169,6 @@ class SyncPullResponse(BaseModel):
                 "total_profiles": 2,
                 "total_conversations": 5,
                 "total_messages": 150,
-                "sync_period_days": 15
+                "sync_period_days": 180
             }
         }

@@ -15,8 +15,8 @@
 import { db } from '../db';
 import { syncApi } from '../api/sync';
 
-// Sync configuration
-const SYNC_DAYS = 15; // Number of days of messages to sync
+// Sync configuration - can be overridden via environment variable
+const SYNC_DAYS = parseInt(import.meta.env.VITE_SYNC_DAYS || '180', 10); // Number of days of messages to sync
 const SYNC_META_KEY = 'lastSync';
 
 /**

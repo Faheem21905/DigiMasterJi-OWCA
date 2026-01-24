@@ -20,7 +20,7 @@ export const syncApi = {
    * Backend: GET /sync/pull?days=N
    * Requires master user token (access_token)
    * 
-   * @param {number} days - Number of days of message history to fetch (default: 15, max: 90)
+   * @param {number} days - Number of days of message history to fetch (default: 180, max: 365)
    * @returns {Promise} - SyncPullResponse with nested data structure
    * 
    * Response structure:
@@ -47,7 +47,7 @@ export const syncApi = {
    *   sync_period_days: number
    * }
    */
-  pull: (days = 15) => {
+  pull: (days = 180) => {
     return apiClient.get('/sync/pull', {
       params: { days },
       timeout: 60000, // 60 seconds for large data sync

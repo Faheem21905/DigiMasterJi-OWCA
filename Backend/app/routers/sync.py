@@ -6,11 +6,12 @@ Endpoint for syncing user data on login.
 This router provides the /sync/pull endpoint which fetches:
 - All profiles for the logged-in master user
 - All conversations for each profile
-- Messages from the past 15 days (no audio data)
+- Messages from the past N days (configurable via environment, no audio data)
 
 DigiMasterJi - Multilingual AI Tutor for Rural Education
 """
 
+import os
 from fastapi import APIRouter, HTTPException, Depends, status, Query
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from typing import Optional
@@ -30,6 +31,9 @@ from app.database.conversations import ConversationsDatabase
 from app.database.messages import MessagesDatabase
 from app.utils.security import decode_access_token
 
+# Sync configuration from environment
+SYNC_DEFAULT_DAYS = int(os.getenv("SYNC_DEFAULT_DAYS", "180"))
+SYNC_MAX_DAYS = int(os.getenv("SYNC_MAX_DAYS", "365"))
 
 router = APIRouter(
     prefix="/sync",
@@ -84,14 +88,14 @@ async def get_current_user_id(credentials: HTTPAuthorizationCredentials = Depend
     response_model=SyncPullResponse,
     status_code=status.HTTP_200_OK,
     summary="Pull all user data for sync",
-    description="""
+    description=f"""
     Fetch all user data on login for frontend synchronization.
     
     This endpoint returns a nested structure containing:
     - User information (master account)
     - All profiles under this account
     - All conversations for each profile
-    - Messages from the past 15 days (configurable via `days` parameter)
+    - Messages from the past N days (configurable via `days` parameter, default: {SYNC_DEFAULT_DAYS}, max: {SYNC_MAX_DAYS})
     
     **Note:** Audio data is excluded from the response to reduce payload size.
     Audio fields (audio_url, audio_base64, etc.) are not included in messages.
@@ -101,10 +105,10 @@ async def get_current_user_id(credentials: HTTPAuthorizationCredentials = Depend
 )
 async def sync_pull(
     days: int = Query(
-        default=15,
+        default=SYNC_DEFAULT_DAYS,
         ge=1,
-        le=90,
-        description="Number of days to fetch messages for (default: 15, max: 90)"
+        le=SYNC_MAX_DAYS,
+        description=f"Number of days to fetch messages for (default: {SYNC_DEFAULT_DAYS}, max: {SYNC_MAX_DAYS})"
     ),
     current_user_id: str = Depends(get_current_user_id)
 ):
@@ -118,7 +122,7 @@ async def sync_pull(
         - Messages[] (past N days, no audio)
     
     Args:
-        days: Number of days to look back for messages (default 15)
+        days: Number of days to look back for messages (default from SYNC_DEFAULT_DAYS env var)
         current_user_id: Authenticated user's ID from JWT token
         
     Returns:

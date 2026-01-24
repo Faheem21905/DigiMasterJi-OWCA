@@ -42,7 +42,8 @@ export const AuthProvider = ({ children }) => {
     setSyncError(null);
     
     try {
-      await syncService.pullFromServer(15); // Pull last 15 days of data
+      // Pull data using default SYNC_DAYS configured in syncService (env: VITE_SYNC_DAYS, default: 180)
+      await syncService.pullFromServer();
       console.log('Initial sync completed successfully');
     } catch (error) {
       console.error('Initial sync failed:', error);
