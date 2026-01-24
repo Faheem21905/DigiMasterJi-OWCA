@@ -11,6 +11,8 @@ import {
   RefreshCw,
   Trophy,
   BookOpen,
+  Wifi,
+  WifiOff,
 } from 'lucide-react';
 import { ChatSidebar, ChatWindow } from '../../components/chat';
 import { NetworkStatusBadge, OfflineBanner, LowBandwidthToggle, useLowBandwidthMode } from '../../components/ui';
@@ -29,7 +31,7 @@ export default function ChatPage() {
   const { activeProfile, isProfileSessionValid, deactivateProfile } = useProfile();
   const { isOnline, isSyncing } = useNetworkStatus();
   
-  // Low bandwidth mode for diagram generation (ASCII instead of SVG)
+  // Low bandwidth mode for data saving
   const { isLowBandwidth } = useLowBandwidthMode();
   
   // Chat service hook - manages all chat state and API calls
@@ -42,11 +44,16 @@ export default function ChatPage() {
     isLoadingMessages,
     isSendingMessage,
     isTyping,
+    isOffline,
+    isOfflineModelAvailable,
+    isUsingOfflineModel,
+    offlineModelName,
     fetchConversations,
     createConversation,
     selectConversation,
     sendMessage,
     sendMessageStream,
+    sendMessageOffline,
     sendVoiceMessage,
     deleteConversation,
     clearActiveConversation,
@@ -119,24 +126,31 @@ export default function ChatPage() {
   };
 
   // Handle sending a message (with streaming)
+  // Automatically uses offline mode when network is unavailable and offline model is available
   const handleSendMessage = async (content, options = {}) => {
     if (!content?.trim()) return;
     try {
       // Pass profileId for creating new conversations
       const profileId = activeProfile?._id || activeProfile?.id;
-      // Include TTS preference in the message
-      const includeAudio = options.includeAudio !== undefined ? options.includeAudio : enableTTS;
-      // Get web search and diagram options from the input
-      const enableWebSearch = options.enableWebSearch || false;
-      const includeDiagram = options.includeDiagram || false;
-      // Use streaming by default for real-time token display
-      // Pass lowBandwidth flag for ASCII diagrams instead of SVG when data saver is on
-      await sendMessageStream(content, profileId, { 
-        includeAudio,
-        lowBandwidth: isLowBandwidth,
-        includeDiagram: includeDiagram,
-        enableWebSearch: enableWebSearch,
-      });
+      
+      // Check if we should use offline mode
+      const useOfflineMode = (!isOnline && isOfflineModelAvailable) || options.forceOffline;
+      
+      if (useOfflineMode) {
+        // Use offline local model
+        await sendMessageOffline(content, profileId);
+      } else {
+        // Include TTS preference in the message
+        const includeAudio = options.includeAudio !== undefined ? options.includeAudio : enableTTS;
+        // Get web search option from the input
+        const enableWebSearch = options.enableWebSearch || false;
+        // Use streaming by default for real-time token display
+        await sendMessageStream(content, profileId, { 
+          includeAudio,
+          lowBandwidth: isLowBandwidth,
+          enableWebSearch: enableWebSearch,
+        });
+      }
     } catch (err) {
       console.error('Error sending message:', err);
     }
@@ -149,15 +163,13 @@ export default function ChatPage() {
       const profileId = activeProfile?._id || activeProfile?.id;
       // Include TTS preference in the voice message
       const includeAudio = options.includeAudio !== undefined ? options.includeAudio : enableTTS;
-      // Get web search and diagram options from the input
+      // Get web search option from the input
       const enableWebSearch = options.enableWebSearch || false;
-      const includeDiagram = options.includeDiagram || false;
       await sendVoiceMessage(audioBlob, profileId, {
         autoSend: true,
         includeAudio,
         slowAudio: false,
         lowBandwidth: isLowBandwidth,
-        includeDiagram: includeDiagram,
         enableWebSearch: enableWebSearch,
       });
     } catch (err) {
@@ -225,6 +237,17 @@ export default function ChatPage() {
           <div className="flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-violet-400" />
             <span className="font-semibold text-white">DigiMasterJi</span>
+            {/* Offline Model Indicator - Mobile */}
+            {isUsingOfflineModel && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/30"
+              >
+                <WifiOff className="w-3 h-3 text-amber-400" />
+                <span className="text-xs font-medium text-amber-400">Offline</span>
+              </motion.div>
+            )}
             {/* Network Status Badge - Mobile */}
             <NetworkStatusBadge variant="minimal" size="sm" />
           </div>
@@ -362,6 +385,28 @@ export default function ChatPage() {
             </div>
             {/* Network Status Badge - Desktop */}
             <NetworkStatusBadge variant="pill" size="sm" />
+            {/* Offline Model Indicator - Desktop */}
+            {isUsingOfflineModel && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/20 border border-amber-500/30"
+              >
+                <WifiOff className="w-4 h-4 text-amber-400" />
+                <span className="text-sm font-medium text-amber-400">Offline Model</span>
+              </motion.div>
+            )}
+            {/* Offline Mode Available Indicator */}
+            {!isOnline && isOfflineModelAvailable && !isUsingOfflineModel && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/20 border border-emerald-500/30"
+              >
+                <Wifi className="w-4 h-4 text-emerald-400" />
+                <span className="text-sm font-medium text-emerald-400">Offline Ready</span>
+              </motion.div>
+            )}
           </div>
 
           {activeProfile && (

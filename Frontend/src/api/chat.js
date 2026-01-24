@@ -232,5 +232,119 @@ export const chatApi = {
       timeout: 180000, // 180 seconds for STT processing
     });
   },
+
+  // ==================== OFFLINE MODE ENDPOINTS ====================
+
+  /**
+   * Check if offline chat mode is available.
+   * Backend: GET /chat/offline/status
+   * Checks if the local Ollama model is available for offline use.
+   * @returns {Promise} - { offline_available: boolean, model: string, status: string }
+   */
+  getOfflineStatus: () => {
+    return apiClient.get('/chat/offline/status', {
+      timeout: 10000, // 10 second timeout for status check
+    });
+  },
+
+  /**
+   * Send a message using the offline local model.
+   * Backend: POST /chat/{conversation_id}/message/offline
+   * Uses the smaller local Gemma model for offline responses.
+   * 
+   * @param {string} conversationId
+   * @param {Object} data - { content: string }
+   * @returns {Promise} - ChatMessageResponse with offline_mode: true
+   */
+  sendMessageOffline: (conversationId, data) => {
+    return apiClient.post(`/chat/${conversationId}/message/offline`, data, {
+      timeout: 120000, // 2 minutes timeout for offline AI responses
+    });
+  },
+
+  /**
+   * Send a message using the offline local model with streaming response.
+   * Uses Server-Sent Events (SSE) to stream tokens as they are generated.
+   * 
+   * @param {string} conversationId
+   * @param {Object} data - { content: string }
+   * @param {Object} callbacks - { onToken: (token) => void, onComplete: (message) => void, onError: (error) => void }
+   * @returns {Promise<void>}
+   */
+  sendMessageOfflineStream: async (conversationId, data, callbacks = {}) => {
+    const { onToken, onComplete, onError } = callbacks;
+    const profileToken = getProfileToken();
+    
+    if (!profileToken) {
+      onError?.(new Error('No profile token available'));
+      return;
+    }
+
+    try {
+      const response = await fetch(`${BASE_URL}/chat/${conversationId}/message/offline`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${profileToken}`,
+        },
+        body: JSON.stringify({
+          ...data,
+          stream: true,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || `HTTP error ${response.status}`);
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        
+        if (done) {
+          break;
+        }
+
+        buffer += decoder.decode(value, { stream: true });
+        
+        // Process complete SSE events from buffer
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || ''; // Keep incomplete line in buffer
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const jsonStr = line.slice(6).trim();
+            if (!jsonStr) continue;
+
+            try {
+              const eventData = JSON.parse(jsonStr);
+
+              if (eventData.token) {
+                // Individual token received
+                onToken?.(eventData.token);
+              } else if (eventData.type === 'message_complete') {
+                // Complete message with metadata (includes offline_mode: true)
+                onComplete?.(eventData.message);
+              } else if (eventData.type === 'error') {
+                // Error during streaming
+                onError?.(new Error(eventData.error || 'Streaming error'));
+              } else if (eventData.type === 'done') {
+                // Stream finished
+              }
+            } catch (parseError) {
+              console.warn('Failed to parse SSE event:', jsonStr, parseError);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Offline streaming error:', error);
+      onError?.(error);
+    }
+  },
 };
 

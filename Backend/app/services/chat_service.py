@@ -8,6 +8,7 @@ This service orchestrates the chat pipeline:
 4. Optionally perform web search for additional information
 5. Construct prompt with context + RAG results + web search + user query
 6. Generate response using Ollama LLM
+7. Support offline mode with local smaller model
 
 DigiMasterJi - Multilingual AI Tutor for Rural Education
 """
@@ -21,6 +22,7 @@ from dotenv import load_dotenv
 from app.services.llm_service import llm_service
 from app.services.rag_service import rag_service
 from app.services.web_search_service import web_search_service
+from app.services.offline_llm_service import offline_llm_service
 from app.database.knowledge_base import vector_search
 from app.database.messages import MessagesDatabase
 from app.models.message import MessageInDB
@@ -56,11 +58,15 @@ LLM_MAX_TOKENS = int(os.getenv("LLM_MAX_TOKENS", "1024"))
 # Web search enabled by default when user requests it
 WEB_SEARCH_ENABLED = os.getenv("WEB_SEARCH_ENABLED", "true").lower() == "true"
 
+# Offline chat support
+OFFLINE_CHAT_ENABLED = os.getenv("OFFLINE_CHAT_ENABLED", "true").lower() == "true"
+
 
 class ChatService:
     """
     Service for handling RAG-enhanced chat interactions.
     Connects user input → vector search → web search → Ollama prompt → response.
+    Supports offline mode with local smaller model.
     """
     
     def __init__(
@@ -86,6 +92,112 @@ class ChatService:
         self.rag_min_score = rag_min_score
         self.temperature = temperature
         self.max_tokens = max_tokens
+        self._offline_mode_available = None
+    
+    async def check_offline_availability(self) -> bool:
+        """
+        Check if offline mode is available (local model installed).
+        
+        Returns:
+            True if offline model is available
+        """
+        if not OFFLINE_CHAT_ENABLED:
+            return False
+        
+        availability = await offline_llm_service.check_availability()
+        self._offline_mode_available = availability.get("model_available", False)
+        return self._offline_mode_available
+    
+    async def generate_offline_response(
+        self,
+        conversation_id: str,
+        user_message: str
+    ) -> Dict[str, Any]:
+        """
+        Generate a response using the offline local model.
+        No RAG, no web search - pure local LLM response in English.
+        
+        Args:
+            conversation_id: The conversation ID
+            user_message: The user's message
+            
+        Returns:
+            Dictionary with response and metadata
+        """
+        try:
+            logger.info(f"[OFFLINE CHAT] === Starting offline response generation ===")
+            
+            # Get limited conversation history for context
+            history = await self.get_conversation_context(conversation_id, limit=6)
+            
+            # Build offline prompt (English only, simpler)
+            prompt = offline_llm_service.build_offline_prompt(
+                user_message=user_message,
+                conversation_history=history
+            )
+            
+            # Generate response using offline model
+            result = await offline_llm_service.generate(prompt)
+            
+            if not result.get("success"):
+                logger.error(f"[OFFLINE CHAT] Generation failed: {result.get('error')}")
+                return {
+                    "success": False,
+                    "error": result.get("error", "Offline generation failed"),
+                    "offline_mode": True
+                }
+            
+            logger.info(f"[OFFLINE CHAT] Response generated (length: {len(result.get('response', ''))} chars)")
+            
+            return {
+                "success": True,
+                "response": result.get("response", "").strip(),
+                "offline_mode": True,
+                "rag_chunks_used": 0,
+                "web_search_used": False,
+                "model": result.get("model", offline_llm_service.model_name)
+            }
+            
+        except Exception as e:
+            logger.error(f"[OFFLINE CHAT] Error: {e}")
+            return {
+                "success": False,
+                "error": str(e),
+                "offline_mode": True
+            }
+    
+    async def generate_offline_response_stream(
+        self,
+        conversation_id: str,
+        user_message: str
+    ) -> AsyncGenerator[str, None]:
+        """
+        Stream a response using the offline local model.
+        
+        Yields:
+            Individual response tokens
+        """
+        try:
+            logger.info(f"[OFFLINE CHAT STREAM] === Starting offline streaming ===")
+            
+            # Get limited conversation history
+            history = await self.get_conversation_context(conversation_id, limit=6)
+            
+            # Build offline prompt
+            prompt = offline_llm_service.build_offline_prompt(
+                user_message=user_message,
+                conversation_history=history
+            )
+            
+            # Stream response
+            async for token in offline_llm_service.generate_stream(prompt):
+                yield token
+            
+            logger.info(f"[OFFLINE CHAT STREAM] === Streaming complete ===")
+            
+        except Exception as e:
+            logger.error(f"[OFFLINE CHAT STREAM] Error: {e}")
+            yield f"[Offline error: {str(e)}]"
     
     async def get_conversation_context(
         self,
@@ -638,12 +750,14 @@ Key Guidelines:
             "chat_service": "healthy",
             "llm_service": "unknown",
             "rag_service": "unknown",
+            "offline_service": "unknown",
             "config": {
                 "history_limit": self.history_limit,
                 "rag_chunks_limit": self.rag_chunks_limit,
                 "rag_min_score": self.rag_min_score,
                 "temperature": self.temperature,
-                "max_tokens": self.max_tokens
+                "max_tokens": self.max_tokens,
+                "offline_enabled": OFFLINE_CHAT_ENABLED
             }
         }
         
@@ -663,6 +777,13 @@ Key Guidelines:
                 "status": "unhealthy",
                 "error": str(e)
             }
+        
+        # Check offline service
+        if OFFLINE_CHAT_ENABLED:
+            offline_health = await offline_llm_service.check_availability()
+            health["offline_service"] = offline_health
+        else:
+            health["offline_service"] = {"status": "disabled"}
         
         return health
 

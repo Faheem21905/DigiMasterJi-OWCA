@@ -265,41 +265,6 @@ class MessagesDatabase:
         return None
 
     @staticmethod
-    async def update_message_diagram(
-        message_id: str,
-        diagram_data: dict
-    ) -> Optional[MessageInDB]:
-        """
-        Update diagram field for a message (used to store generated visual diagram).
-        
-        Args:
-            message_id: Message's ObjectId as string
-            diagram_data: Dictionary with diagram data:
-                - type: 'svg' or 'ascii'
-                - diagram_type: e.g., 'process', 'cycle', 'structure'
-                - content: SVG markup or ASCII art
-                - title: Diagram title
-                - size_bytes: Optional size in bytes
-                
-        Returns:
-            Updated MessageInDB or None
-        """
-        if not ObjectId.is_valid(message_id):
-            return None
-            
-        collection = await MessagesDatabase.get_collection()
-        
-        result = await collection.find_one_and_update(
-            {"_id": ObjectId(message_id)},
-            {"$set": {"diagram": diagram_data}},
-            return_document=True
-        )
-        
-        if result:
-            return MessageInDB(**result)
-        return None
-
-    @staticmethod
     async def get_messages_for_sync(
         conversation_id: str,
         days: int = 15

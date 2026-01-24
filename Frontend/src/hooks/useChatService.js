@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { chatApi } from '../api/chat';
 import { syncService } from '../services/syncService';
 
@@ -70,8 +70,37 @@ export function useChatService() {
   // Error state
   const [error, setError] = useState(null);
 
+  // Offline mode state
+  const [isOfflineModelAvailable, setIsOfflineModelAvailable] = useState(false);
+  const [isUsingOfflineModel, setIsUsingOfflineModel] = useState(false);
+  const [offlineModelName, setOfflineModelName] = useState(null);
+
   // Ref to track if initial load has happened
   const initialLoadDone = useRef(false);
+
+  /**
+   * Check if offline local model is available
+   * Caches the result for performance
+   */
+  const checkOfflineModelAvailability = useCallback(async () => {
+    try {
+      const response = await chatApi.getOfflineStatus();
+      const { offline_available, model } = response.data;
+      setIsOfflineModelAvailable(offline_available);
+      setOfflineModelName(model || null);
+      return offline_available;
+    } catch (err) {
+      console.log('[Chat] Offline model not available:', err.message);
+      setIsOfflineModelAvailable(false);
+      setOfflineModelName(null);
+      return false;
+    }
+  }, []);
+
+  // Check offline model availability on mount
+  useEffect(() => {
+    checkOfflineModelAvailability();
+  }, [checkOfflineModelAvailability]);
 
   /**
    * Fetch all conversations for the current profile
@@ -227,7 +256,7 @@ export function useChatService() {
    * Send a message and get AI response
    * @param {string} content - The message content
    * @param {string} profileId - The profile ID (required if no active conversation)
-   * @param {Object} options - { includeAudio?: boolean, slowAudio?: boolean, lowBandwidth?: boolean, includeDiagram?: boolean, enableWebSearch?: boolean }
+   * @param {Object} options - { includeAudio?: boolean, slowAudio?: boolean, lowBandwidth?: boolean, enableWebSearch?: boolean }
    * @returns {Object} - The AI response message
    */
   const sendMessage = useCallback(async (content, profileId = null, options = {}) => {
@@ -236,8 +265,7 @@ export function useChatService() {
     const { 
       includeAudio = false, 
       slowAudio = false,
-      lowBandwidth = false, // Use ASCII art instead of SVG for diagrams
-      includeDiagram = false, // Include visual diagrams when explicitly enabled
+      lowBandwidth = false, // Low bandwidth mode for data saving
       enableWebSearch = false, // Enable web search for real-time information
     } = options;
 
@@ -287,7 +315,6 @@ export function useChatService() {
         include_audio: includeAudio,
         slow_audio: slowAudio,
         low_bandwidth: lowBandwidth,
-        include_diagram: includeDiagram,
         enable_web_search: enableWebSearch,
       });
       const aiResponse = response.data;
@@ -387,7 +414,7 @@ export function useChatService() {
    * Send a message and get AI response with streaming (tokens appear as they're generated)
    * @param {string} content - The message content
    * @param {string} profileId - The profile ID (required if no active conversation)
-   * @param {Object} options - { includeAudio?: boolean, slowAudio?: boolean, lowBandwidth?: boolean, includeDiagram?: boolean, enableWebSearch?: boolean }
+   * @param {Object} options - { includeAudio?: boolean, slowAudio?: boolean, lowBandwidth?: boolean, enableWebSearch?: boolean }
    * @returns {Object} - The AI response message (after streaming completes)
    */
   const sendMessageStream = useCallback(async (content, profileId = null, options = {}) => {
@@ -396,8 +423,7 @@ export function useChatService() {
     const { 
       includeAudio = false, 
       slowAudio = false,
-      lowBandwidth = false, // Use ASCII art instead of SVG for diagrams
-      includeDiagram = false, // Include visual diagrams when explicitly enabled
+      lowBandwidth = false, // Low bandwidth mode for data saving
       enableWebSearch = false, // Enable web search for real-time information
     } = options;
 
@@ -461,7 +487,6 @@ export function useChatService() {
           include_audio: includeAudio,
           slow_audio: slowAudio,
           low_bandwidth: lowBandwidth,
-          include_diagram: includeDiagram,
           enable_web_search: enableWebSearch,
         },
         {
@@ -578,10 +603,209 @@ export function useChatService() {
   }, [activeConversation, createConversation]);
 
   /**
+   * Send a message using the offline local model (streaming).
+   * This uses a smaller local model when network is unavailable or when explicitly requested.
+   * Note: Only English responses are supported in offline mode.
+   * @param {string} content - The message content
+   * @param {string} profileId - The profile ID (required if no active conversation)
+   * @returns {Object} - The AI response message with offline_mode: true
+   */
+  const sendMessageOffline = useCallback(async (content, profileId = null) => {
+    if (!content?.trim()) return null;
+
+    // Check if offline model is available
+    if (!isOfflineModelAvailable) {
+      setError('Offline model is not available. Please check your local Ollama installation.');
+      return null;
+    }
+
+    setError(null);
+    let conversationId = activeConversation?._id || activeConversation?.id;
+    let currentConversation = activeConversation;
+
+    // Create new conversation if none active
+    if (!conversationId) {
+      if (!profileId) {
+        setError('Profile ID is required to start a new conversation');
+        return null;
+      }
+      
+      // For offline mode, we may not be able to create new conversations on the server
+      // If online, create normally; if offline, show error
+      if (!navigator.onLine) {
+        setError('Cannot create new conversations while offline. Please use an existing conversation.');
+        return null;
+      }
+      
+      try {
+        const newConv = await createConversation(profileId);
+        if (!newConv) {
+          setError('Failed to create conversation');
+          return null;
+        }
+        conversationId = newConv._id || newConv.id;
+        currentConversation = newConv;
+      } catch (err) {
+        console.error('Failed to create conversation:', err);
+        setError('Failed to create conversation. Please try again.');
+        return null;
+      }
+    }
+
+    // Create optimistic user message
+    const userMessage = {
+      _id: `temp-offline-user-${Date.now()}`,
+      conversation_id: conversationId,
+      role: 'user',
+      content: content.trim(),
+      timestamp: new Date().toISOString(),
+    };
+
+    // Create placeholder AI message for streaming
+    const streamingMessageId = `offline-streaming-${Date.now()}`;
+    const streamingMessage = {
+      _id: streamingMessageId,
+      conversation_id: conversationId,
+      role: 'assistant',
+      content: '',
+      timestamp: new Date().toISOString(),
+      isStreaming: true,
+      offline_mode: true, // Mark as offline mode
+    };
+
+    // Add user message and empty AI message immediately
+    setMessages((prev) => [...prev, userMessage, streamingMessage]);
+    setIsSendingMessage(true);
+    setIsTyping(true);
+    setIsUsingOfflineModel(true); // Signal that we're using offline model
+
+    return new Promise((resolve) => {
+      let finalAiResponse = null;
+
+      chatApi.sendMessageOfflineStream(
+        conversationId,
+        { content: content.trim() },
+        {
+          // Called for each token
+          onToken: (token) => {
+            setMessages((prev) =>
+              prev.map((m) =>
+                m._id === streamingMessageId
+                  ? { ...m, content: m.content + token }
+                  : m
+              )
+            );
+          },
+
+          // Called when streaming completes with full message
+          onComplete: (completeMessage) => {
+            finalAiResponse = completeMessage;
+
+            // Replace streaming message with final message
+            setMessages((prev) => {
+              const withoutStreaming = prev.filter(
+                (m) => m._id !== streamingMessageId && m._id !== userMessage._id
+              );
+              return [
+                ...withoutStreaming,
+                { ...userMessage, _id: `offline-user-${Date.now()}` },
+                { ...completeMessage, isStreaming: false, offline_mode: true },
+              ];
+            });
+
+            // Store messages locally for offline access (non-blocking)
+            syncService.addLocalMessage({ ...userMessage, _id: `offline-user-${Date.now()}` }).catch(console.error);
+            if (completeMessage._id) {
+              syncService.addLocalMessage({ ...completeMessage, offline_mode: true }).catch(console.error);
+            }
+
+            // Check if this is the first message - generate title
+            const isFirstMessage =
+              currentConversation &&
+              (!currentConversation.title ||
+                currentConversation.title === 'New Chat' ||
+                currentConversation.message_count === 0);
+
+            if (isFirstMessage && navigator.onLine) {
+              const generatedTitle = generateTitleFromMessage(content);
+
+              chatApi
+                .updateSession(conversationId, { title: generatedTitle })
+                .then(() => console.log('Conversation title updated:', generatedTitle))
+                .catch((err) => console.error('Failed to update conversation title:', err));
+
+              setActiveConversation((prev) =>
+                prev ? { ...prev, title: generatedTitle } : prev
+              );
+              setConversations((prev) =>
+                prev.map((c) => {
+                  const cId = c._id || c.id;
+                  if (cId === conversationId) {
+                    return { ...c, title: generatedTitle };
+                  }
+                  return c;
+                })
+              );
+            }
+
+            // Update conversation in list
+            setConversations((prev) => {
+              const updated = prev.map((c) => {
+                const cId = c._id || c.id;
+                if (cId === conversationId) {
+                  return {
+                    ...c,
+                    updated_at: new Date().toISOString(),
+                    message_count: (c.message_count || 0) + 2,
+                  };
+                }
+                return c;
+              });
+              return updated.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+            });
+
+            setIsSendingMessage(false);
+            setIsTyping(false);
+            setIsUsingOfflineModel(false);
+            resolve(finalAiResponse);
+          },
+
+          // Called on error
+          onError: (err) => {
+            console.error('Offline streaming error:', err);
+            const errorMessage = err.message || 'Failed to get offline AI response.';
+            setError(errorMessage);
+
+            // Replace streaming message with error message
+            setMessages((prev) =>
+              prev.map((m) =>
+                m._id === streamingMessageId
+                  ? {
+                      ...m,
+                      content: `Sorry, the offline model couldn't process your message. ${errorMessage}`,
+                      isStreaming: false,
+                      isError: true,
+                      offline_mode: true,
+                    }
+                  : m
+              )
+            );
+
+            setIsSendingMessage(false);
+            setIsTyping(false);
+            setIsUsingOfflineModel(false);
+            resolve(null);
+          },
+        }
+      );
+    });
+  }, [activeConversation, createConversation, isOfflineModelAvailable]);
+
+  /**
    * Upload audio for transcription (STT) and optionally send as message
    * @param {Blob} audioBlob - The recorded audio blob
    * @param {string} profileId - The profile ID (required if no active conversation)
-   * @param {Object} options - { autoSend?: boolean, includeAudio?: boolean, slowAudio?: boolean, lowBandwidth?: boolean, includeDiagram?: boolean, enableWebSearch?: boolean }
+   * @param {Object} options - { autoSend?: boolean, includeAudio?: boolean, slowAudio?: boolean, lowBandwidth?: boolean, enableWebSearch?: boolean }
    * @returns {Object} - { transcribedText, aiResponse? }
    */
   const sendVoiceMessage = useCallback(async (audioBlob, profileId = null, options = {}) => {
@@ -589,8 +813,7 @@ export function useChatService() {
       autoSend = true, // Automatically send transcribed text to AI
       includeAudio = true, // Include TTS in AI response
       slowAudio = false, // Slow down TTS for learning
-      lowBandwidth = false, // Use ASCII art instead of SVG for diagrams
-      includeDiagram = false, // Include visual diagrams when explicitly enabled
+      lowBandwidth = false, // Low bandwidth mode for data saving
       enableWebSearch = false, // Enable web search for real-time information
     } = options;
 
@@ -685,7 +908,6 @@ export function useChatService() {
             include_audio: includeAudio,
             slow_audio: slowAudio,
             low_bandwidth: lowBandwidth,
-            include_diagram: includeDiagram,
             enable_web_search: enableWebSearch,
           },
           {
@@ -970,6 +1192,11 @@ export function useChatService() {
     error,
     isOffline,
 
+    // Offline mode state
+    isOfflineModelAvailable,
+    isUsingOfflineModel,
+    offlineModelName,
+
     // Loading states
     isLoadingConversations,
     isLoadingMessages,
@@ -982,6 +1209,7 @@ export function useChatService() {
     selectConversation,
     sendMessage,
     sendMessageStream,
+    sendMessageOffline,
     sendVoiceMessage,
     transcribeAudio,
     deleteConversation,
@@ -990,6 +1218,7 @@ export function useChatService() {
     clearError,
     getLocalConversationsForProfile,
     resetChatState,
+    checkOfflineModelAvailability,
 
     // Helpers
     initialLoadDone: initialLoadDone.current,

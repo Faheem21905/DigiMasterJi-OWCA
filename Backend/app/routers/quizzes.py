@@ -351,8 +351,8 @@ async def submit_quiz(
             except Exception as e:
                 logger.error(f"[QUIZ] Background insights generation failed: {e}")
         
-        # Schedule the background task
-        background_tasks.add_task(asyncio.create_task, generate_insights_async())
+        # Schedule the background task - this runs after the response is sent
+        background_tasks.add_task(generate_insights_async)
         logger.info(f"[QUIZ] Scheduled background insights generation for profile: {profile_id}")
         
         return QuizSubmissionResponse(
@@ -638,7 +638,8 @@ async def refresh_insights(
             except Exception as e:
                 logger.error(f"[INSIGHTS REFRESH] Background refresh failed: {e}")
         
-        background_tasks.add_task(asyncio.create_task, refresh_async())
+        # Schedule the background task - this runs after the response is sent
+        background_tasks.add_task(refresh_async)
         
         return {
             "status": "scheduled",

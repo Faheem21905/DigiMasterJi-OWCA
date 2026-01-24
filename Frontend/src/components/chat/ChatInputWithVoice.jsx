@@ -14,8 +14,6 @@ import {
   Zap,
   Globe,
   GlobeOff,
-  Image,
-  ImageOff,
 } from 'lucide-react';
 import { useAudioRecorder } from '../../hooks/useAudioRecorder';
 
@@ -29,7 +27,6 @@ import { useAudioRecorder } from '../../hooks/useAudioRecorder';
  * - Recording timer and audio level visualization
  * - TTS toggle for AI responses
  * - Web search toggle for live internet searches
- * - Diagram toggle for visual explanations
  */
 export default function ChatInput({ 
   onSendMessage,
@@ -47,7 +44,6 @@ export default function ChatInput({
   const [ttsEnabled, setTtsEnabled] = useState(enableTTS);
   const [showRecordingUI, setShowRecordingUI] = useState(false);
   const [webSearchEnabled, setWebSearchEnabled] = useState(false);
-  const [diagramEnabled, setDiagramEnabled] = useState(false);
 
   // Audio recorder hook
   const {
@@ -78,7 +74,6 @@ export default function ChatInput({
       onSendMessage?.(message.trim(), { 
         includeAudio: ttsEnabled,
         enableWebSearch: webSearchEnabled,
-        includeDiagram: diagramEnabled,
       });
       setMessage('');
     }
@@ -110,7 +105,6 @@ export default function ChatInput({
       await onSendVoice(audioBlob, { 
         includeAudio: ttsEnabled,
         enableWebSearch: webSearchEnabled,
-        includeDiagram: diagramEnabled,
       });
       clearAudio();
       setShowRecordingUI(false);
@@ -125,10 +119,6 @@ export default function ChatInput({
 
   const toggleWebSearch = () => {
     setWebSearchEnabled(!webSearchEnabled);
-  };
-
-  const toggleDiagram = () => {
-    setDiagramEnabled(!diagramEnabled);
   };
 
   // Recording UI
@@ -332,38 +322,6 @@ export default function ChatInput({
               <>
                 <GlobeOff className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Search</span>
-              </>
-            )}
-          </motion.button>
-
-          {/* Diagram Toggle */}
-          <motion.button
-            type="button"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={toggleDiagram}
-            disabled={isDataSaverMode || isOffline}
-            className={`
-              flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium
-              transition-all duration-200
-              ${(isDataSaverMode || isOffline)
-                ? 'bg-white/5 text-white/20 cursor-not-allowed'
-                : diagramEnabled 
-                  ? 'bg-violet-500/20 text-violet-400 border border-violet-500/30' 
-                  : 'bg-white/5 text-white/50 border border-white/10 hover:bg-white/10 hover:text-white/70'
-              }
-            `}
-            title={isDataSaverMode ? 'Disabled in Data Saver mode' : diagramEnabled ? 'Diagrams enabled' : 'Enable diagrams'}
-          >
-            {diagramEnabled ? (
-              <>
-                <Image className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Diagram</span>
-              </>
-            ) : (
-              <>
-                <ImageOff className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Diagram</span>
               </>
             )}
           </motion.button>

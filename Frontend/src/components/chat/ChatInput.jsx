@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Send, Mic, Paperclip, Smile, Loader2, Globe, GlobeOff, Image, ImageOff } from 'lucide-react';
+import { Send, Mic, Paperclip, Smile, Loader2, Globe, GlobeOff } from 'lucide-react';
 
 /**
  * ChatInput Component
@@ -15,8 +15,6 @@ export default function ChatInput({
   showAttachButton = false,
   enableWebSearch = false,
   onWebSearchToggle,
-  enableDiagram = false,
-  onDiagramToggle,
 }) {
   const [message, setMessage] = useState('');
   const [isFocused, setIsFocused] = useState(false);
@@ -78,37 +76,6 @@ export default function ChatInput({
               <>
                 <GlobeOff className="w-3.5 h-3.5" />
                 <span>Web Search</span>
-              </>
-            )}
-          </motion.button>
-        )}
-
-        {/* Diagram Toggle */}
-        {onDiagramToggle && (
-          <motion.button
-            type="button"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={onDiagramToggle}
-            className={`
-              flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium
-              transition-all duration-200
-              ${enableDiagram 
-                ? 'bg-violet-500/20 text-violet-400 border border-violet-500/30' 
-                : 'bg-white/5 text-white/50 border border-white/10 hover:bg-white/10 hover:text-white/70'
-              }
-            `}
-            title={enableDiagram ? "Diagrams enabled" : "Enable diagrams (add 'draw diagram' to your message)"}
-          >
-            {enableDiagram ? (
-              <>
-                <Image className="w-3.5 h-3.5" />
-                <span>Diagrams</span>
-              </>
-            ) : (
-              <>
-                <ImageOff className="w-3.5 h-3.5" />
-                <span>Diagrams</span>
               </>
             )}
           </motion.button>
