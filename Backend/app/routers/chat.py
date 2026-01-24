@@ -499,7 +499,8 @@ async def send_message(
         user_message=message.content,
         subject=conversation.subject_tag,
         language=None,
-        profile_data=profile_data
+        profile_data=profile_data,
+        enable_web_search=message.enable_web_search
     )
     
     if not ai_result.get("success"):
@@ -621,7 +622,8 @@ async def _stream_response(
                 user_message=message.content,
                 subject=conversation.subject_tag,
                 language=None,
-                profile_data=profile_data
+                profile_data=profile_data,
+                enable_web_search=message.enable_web_search
             ):
                 full_response += token
                 # Send token as SSE event

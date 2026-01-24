@@ -227,7 +227,7 @@ export function useChatService() {
    * Send a message and get AI response
    * @param {string} content - The message content
    * @param {string} profileId - The profile ID (required if no active conversation)
-   * @param {Object} options - { includeAudio?: boolean, slowAudio?: boolean, lowBandwidth?: boolean, includeDiagram?: boolean }
+   * @param {Object} options - { includeAudio?: boolean, slowAudio?: boolean, lowBandwidth?: boolean, includeDiagram?: boolean, enableWebSearch?: boolean }
    * @returns {Object} - The AI response message
    */
   const sendMessage = useCallback(async (content, profileId = null, options = {}) => {
@@ -237,7 +237,8 @@ export function useChatService() {
       includeAudio = false, 
       slowAudio = false,
       lowBandwidth = false, // Use ASCII art instead of SVG for diagrams
-      includeDiagram = true, // Include visual diagrams when appropriate
+      includeDiagram = false, // Include visual diagrams when explicitly enabled
+      enableWebSearch = false, // Enable web search for real-time information
     } = options;
 
     setError(null);
@@ -287,6 +288,7 @@ export function useChatService() {
         slow_audio: slowAudio,
         low_bandwidth: lowBandwidth,
         include_diagram: includeDiagram,
+        enable_web_search: enableWebSearch,
       });
       const aiResponse = response.data;
 
@@ -385,7 +387,7 @@ export function useChatService() {
    * Send a message and get AI response with streaming (tokens appear as they're generated)
    * @param {string} content - The message content
    * @param {string} profileId - The profile ID (required if no active conversation)
-   * @param {Object} options - { includeAudio?: boolean, slowAudio?: boolean, lowBandwidth?: boolean, includeDiagram?: boolean }
+   * @param {Object} options - { includeAudio?: boolean, slowAudio?: boolean, lowBandwidth?: boolean, includeDiagram?: boolean, enableWebSearch?: boolean }
    * @returns {Object} - The AI response message (after streaming completes)
    */
   const sendMessageStream = useCallback(async (content, profileId = null, options = {}) => {
@@ -395,7 +397,8 @@ export function useChatService() {
       includeAudio = false, 
       slowAudio = false,
       lowBandwidth = false, // Use ASCII art instead of SVG for diagrams
-      includeDiagram = true, // Include visual diagrams when appropriate
+      includeDiagram = false, // Include visual diagrams when explicitly enabled
+      enableWebSearch = false, // Enable web search for real-time information
     } = options;
 
     setError(null);
@@ -459,6 +462,7 @@ export function useChatService() {
           slow_audio: slowAudio,
           low_bandwidth: lowBandwidth,
           include_diagram: includeDiagram,
+          enable_web_search: enableWebSearch,
         },
         {
           // Called for each token
@@ -577,7 +581,7 @@ export function useChatService() {
    * Upload audio for transcription (STT) and optionally send as message
    * @param {Blob} audioBlob - The recorded audio blob
    * @param {string} profileId - The profile ID (required if no active conversation)
-   * @param {Object} options - { autoSend?: boolean, includeAudio?: boolean, slowAudio?: boolean, lowBandwidth?: boolean, includeDiagram?: boolean }
+   * @param {Object} options - { autoSend?: boolean, includeAudio?: boolean, slowAudio?: boolean, lowBandwidth?: boolean, includeDiagram?: boolean, enableWebSearch?: boolean }
    * @returns {Object} - { transcribedText, aiResponse? }
    */
   const sendVoiceMessage = useCallback(async (audioBlob, profileId = null, options = {}) => {
@@ -586,7 +590,8 @@ export function useChatService() {
       includeAudio = true, // Include TTS in AI response
       slowAudio = false, // Slow down TTS for learning
       lowBandwidth = false, // Use ASCII art instead of SVG for diagrams
-      includeDiagram = true, // Include visual diagrams when appropriate
+      includeDiagram = false, // Include visual diagrams when explicitly enabled
+      enableWebSearch = false, // Enable web search for real-time information
     } = options;
 
     if (!audioBlob) {
@@ -681,6 +686,7 @@ export function useChatService() {
             slow_audio: slowAudio,
             low_bandwidth: lowBandwidth,
             include_diagram: includeDiagram,
+            enable_web_search: enableWebSearch,
           },
           {
             // Called for each token

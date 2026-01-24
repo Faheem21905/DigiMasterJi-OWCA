@@ -1,16 +1,15 @@
 """
-Diagram Service - Data-Light Visual Explanations
-=================================================
-Generates lightweight SVG diagrams and ASCII art for visual learning.
-Optimized for low-bandwidth scenarios in rural areas.
+Diagram Service - LLM-Powered Visual Explanations
+==================================================
+Generates educational SVG diagrams using LLM for visual learning.
+DISABLED BY DEFAULT - Only triggered when user explicitly requests a diagram.
 
 DigiMasterJi - Multilingual AI Tutor for Rural Education
 
 Features:
-- SVG diagrams (5-10KB each, text-based)
+- Pure LLM-powered SVG diagram generation (no templates)
 - ASCII art for ultra-low-bandwidth mode
-- LLM-powered diagram generation
-- Pre-built diagram templates for common STEM concepts
+- Strict keyword detection - only generates when explicitly requested
 """
 
 import re
@@ -30,75 +29,116 @@ class DiagramType(str, Enum):
     PROCESS = "process"
     STRUCTURE = "structure"
     GRAPH = "graph"
+    GENERIC = "generic"
     NONE = "none"
 
 
-# Keywords that suggest a diagram would be helpful
-DIAGRAM_TRIGGER_KEYWORDS = {
-    # Process/Cycle keywords
+# STRICT keywords that EXPLICITLY request a diagram
+# These are the ONLY triggers - not topic-based keywords
+DIAGRAM_EXPLICIT_KEYWORDS = [
+    # English explicit requests
+    "draw a diagram",
+    "show me a diagram",
+    "make a diagram",
+    "create a diagram",
+    "generate a diagram",
+    "can you draw",
+    "please draw",
+    "draw me",
+    "show a picture",
+    "show a visual",
+    "visual representation",
+    "visualize",
+    "diagram of",
+    "flowchart of",
+    "show the structure",
+    "draw the structure",
+    "illustrate",
+    "make a chart",
+    "draw a chart",
+    
+    # Hindi explicit requests
+    "diagram banao",
+    "diagram dikhao",
+    "diagram banana",
+    "chitra banao",
+    "chitra dikhao",
+    "tasveer banao",
+    "tasveer dikhao",
+    "dikha do",
+    "bana do",
+    "rekha chitra",
+    "chitran karo",
+    
+    # Tamil explicit requests
+    "படம் வரை",
+    "வரைபடம்",
+    
+    # Short explicit triggers
+    "draw",
+    "diagram",
+    "flowchart",
+    "chart",
+]
+
+# Keywords to determine diagram TYPE (only used after explicit trigger is detected)
+DIAGRAM_TYPE_KEYWORDS = {
     "process": DiagramType.PROCESS,
     "cycle": DiagramType.CYCLE,
     "steps": DiagramType.PROCESS,
     "stages": DiagramType.PROCESS,
-    "phases": DiagramType.PROCESS,
-    "how does": DiagramType.PROCESS,
-    "how do": DiagramType.PROCESS,
-    "kaise": DiagramType.PROCESS,  # Hindi: how
-    
-    # Structure keywords
+    "flow": DiagramType.FLOWCHART,
+    "flowchart": DiagramType.FLOWCHART,
     "structure": DiagramType.STRUCTURE,
     "parts": DiagramType.STRUCTURE,
     "anatomy": DiagramType.STRUCTURE,
     "components": DiagramType.STRUCTURE,
-    "layers": DiagramType.STRUCTURE,
-    "sanrachna": DiagramType.STRUCTURE,  # Hindi: structure
-    
-    # Comparison keywords
-    "difference": DiagramType.COMPARISON,
     "compare": DiagramType.COMPARISON,
-    "versus": DiagramType.COMPARISON,
+    "comparison": DiagramType.COMPARISON,
+    "difference": DiagramType.COMPARISON,
     "vs": DiagramType.COMPARISON,
-    "antar": DiagramType.COMPARISON,  # Hindi: difference
-    
-    # Flowchart keywords
-    "flow": DiagramType.FLOWCHART,
-    "sequence": DiagramType.FLOWCHART,
-    "order": DiagramType.FLOWCHART,
-    
-    # Hierarchy keywords
-    "classification": DiagramType.HIERARCHY,
     "types": DiagramType.HIERARCHY,
+    "classification": DiagramType.HIERARCHY,
     "categories": DiagramType.HIERARCHY,
-    "prakar": DiagramType.HIERARCHY,  # Hindi: types
-    
-    # Specific STEM topics that benefit from diagrams
-    "photosynthesis": DiagramType.PROCESS,
-    "prakash sanshleshan": DiagramType.PROCESS,  # Hindi: photosynthesis
-    "water cycle": DiagramType.CYCLE,
-    "jal chakra": DiagramType.CYCLE,  # Hindi: water cycle
-    "food chain": DiagramType.HIERARCHY,
-    "digestive system": DiagramType.PROCESS,
-    "cell": DiagramType.STRUCTURE,
-    "atom": DiagramType.STRUCTURE,
-    "solar system": DiagramType.STRUCTURE,
-    "plant": DiagramType.STRUCTURE,
-    "circuit": DiagramType.FLOWCHART,
-    "fraction": DiagramType.STRUCTURE,
-    "equation": DiagramType.GRAPH,
+    "hierarchy": DiagramType.HIERARCHY,
 }
 
 
-def should_generate_diagram(query: str, response: str) -> Tuple[bool, DiagramType]:
+def should_generate_diagram_strict(query: str) -> Tuple[bool, DiagramType]:
     """
-    Determine if a diagram would be helpful for the given query/response.
+    STRICT check if user explicitly requested a diagram.
+    
+    This function ONLY returns True if the user explicitly asks for a diagram.
+    It does NOT automatically trigger on educational topics.
     
     Args:
-        query: User's question
-        response: AI's text response
+        query: User's question/request
         
     Returns:
         Tuple of (should_generate, diagram_type)
     """
+    query_lower = query.lower()
+    
+    # Check for explicit diagram request keywords
+    explicit_request = False
+    for keyword in DIAGRAM_EXPLICIT_KEYWORDS:
+        if keyword in query_lower:
+            explicit_request = True
+            logger.info(f"[DIAGRAM] Explicit request detected: '{keyword}'")
+            break
+    
+    if not explicit_request:
+        return False, DiagramType.NONE
+    
+    # Determine diagram type from query
+    for keyword, dtype in DIAGRAM_TYPE_KEYWORDS.items():
+        if keyword in query_lower:
+            logger.info(f"[DIAGRAM] Type determined: {dtype.value}")
+            return True, dtype
+    
+    # Default to generic if type not specified
+    return True, DiagramType.GENERIC
+    
     combined_text = f"{query} {response}".lower()
     
     # Check for diagram triggers
@@ -750,7 +790,13 @@ def extract_diagram_elements_from_response(response: str, diagram_type: DiagramT
 
 # Singleton instance
 class DiagramService:
-    """Service class for diagram generation with LLM support."""
+    """
+    Service class for LLM-powered diagram generation.
+    
+    IMPORTANT: Diagrams are DISABLED by default and only generated when
+    user explicitly requests one using trigger keywords like "draw diagram",
+    "show flowchart", etc.
+    """
     
     def __init__(self):
         self._llm_service = None
@@ -763,9 +809,21 @@ class DiagramService:
             self._llm_service = LLMService(timeout=60.0)
         return self._llm_service
     
-    def should_include_diagram(self, query: str, response: str) -> Tuple[bool, DiagramType]:
-        """Check if a diagram should be included."""
-        return should_generate_diagram(query, response)
+    def should_include_diagram(self, query: str, response: str = "") -> Tuple[bool, DiagramType]:
+        """
+        Check if a diagram should be included using STRICT keyword detection.
+        
+        Only returns True if user explicitly requests a diagram.
+        Does NOT auto-trigger on educational topics.
+        
+        Args:
+            query: User's question/request
+            response: AI response (not used in strict mode)
+            
+        Returns:
+            Tuple of (should_generate, diagram_type)
+        """
+        return should_generate_diagram_strict(query)
     
     async def generate_diagram_with_llm(
         self,
@@ -774,10 +832,10 @@ class DiagramService:
         diagram_type: DiagramType
     ) -> Optional[Dict[str, Any]]:
         """
-        Generate a diagram using LLM for better context understanding.
+        Generate a diagram using LLM for pure SVG generation.
         
-        The LLM analyzes the query and response to generate a relevant SVG diagram
-        with proper content and structure.
+        The LLM analyzes the query and response to generate a completely
+        custom SVG diagram with proper content and structure.
         
         Args:
             query: User's question
@@ -790,31 +848,50 @@ class DiagramService:
         try:
             logger.info(f"[DIAGRAM LLM] Generating {diagram_type.value} diagram for query: {query[:50]}...")
             
-            prompt = f"""You are a diagram generator for educational content. Generate an SVG diagram for the following:
+            # Determine diagram type description for the prompt
+            type_description = {
+                DiagramType.PROCESS: "a step-by-step process diagram showing sequential steps with arrows",
+                DiagramType.CYCLE: "a circular cycle diagram with arrows connecting each stage",
+                DiagramType.FLOWCHART: "a flowchart with decision points and flow arrows",
+                DiagramType.STRUCTURE: "a structure diagram showing components and their relationships",
+                DiagramType.COMPARISON: "a comparison diagram with two columns showing differences",
+                DiagramType.HIERARCHY: "a tree/hierarchy diagram showing classification levels",
+                DiagramType.GRAPH: "a simple graph or chart visualization",
+                DiagramType.GENERIC: "an educational diagram appropriate for the topic",
+            }.get(diagram_type, "an educational diagram")
+            
+            prompt = f"""You are an expert educational diagram creator. Generate a complete, valid SVG diagram.
 
-Topic/Question: {query}
+TOPIC: {query}
 
-Context from the explanation:
-{response[:1000]}
+CONTEXT:
+{response[:1500]}
 
-Diagram type: {diagram_type.value}
+DIAGRAM TYPE: {type_description}
 
-Generate a clean, educational SVG diagram with these requirements:
-1. SVG should be self-contained with viewBox for responsiveness
-2. Use these colors: primary=#10b981 (green), secondary=#6366f1 (indigo), accent=#f59e0b (amber), text=#ffffff, background=#1e1b4b
-3. Include clear labels and text (font-size between 12-16px)
-4. Keep it simple and educational - suitable for school students
-5. Width should be between 400-800px, height between 300-500px
-6. Use rounded rectangles (rx="8" or rx="12") for boxes
-7. Include a title at the top
-8. Use arrows (→) or lines to show connections/flow
+STRICT SVG REQUIREMENTS:
+1. Start with <svg xmlns="http://www.w3.org/2000/svg" and end with </svg>
+2. Include viewBox="0 0 WIDTH HEIGHT" for responsiveness
+3. Width: 500-700px, Height: 350-500px
+4. Use this color scheme:
+   - Background: #1e1b4b (dark indigo)
+   - Primary boxes: #10b981 (emerald green)
+   - Secondary elements: #6366f1 (indigo)
+   - Accent/arrows: #f59e0b (amber)
+   - Text: #ffffff (white)
+5. Include clear, readable text (font-size 12-16px)
+6. Use rounded rectangles (rx="8") for all boxes
+7. Add a title at the top (font-size 18px, bold)
+8. Use arrows or lines to show connections
+9. Keep it simple - suitable for school students
+10. Include at least 3-5 key elements/concepts
 
-Return ONLY the SVG code, starting with <svg and ending with </svg>. No other text or explanation."""
+OUTPUT: Return ONLY the complete SVG code. No explanation, no markdown, no code blocks. Just the raw SVG starting with <svg and ending with </svg>."""
 
             result = await self.llm_service.generate(
                 prompt=prompt,
-                temperature=0.5,
-                max_tokens=2000
+                temperature=0.4,  # Lower temperature for more consistent output
+                max_tokens=3000
             )
             
             if not result.get("success"):
@@ -823,14 +900,24 @@ Return ONLY the SVG code, starting with <svg and ending with </svg>. No other te
             
             svg_content = result.get("response", "").strip()
             
-            # Extract SVG from response if wrapped in other text
-            svg_match = re.search(r'<svg[^>]*>[\s\S]*?</svg>', svg_content, re.IGNORECASE)
+            # Extract SVG from response if wrapped in other text or code blocks
+            # Handle markdown code blocks
+            code_block_match = re.search(r'```(?:svg|xml)?\s*([\s\S]*?)```', svg_content)
+            if code_block_match:
+                svg_content = code_block_match.group(1).strip()
+            
+            # Find the SVG element
+            svg_match = re.search(r'<svg[^>]*>[\s\S]*</svg>', svg_content, re.IGNORECASE)
             if svg_match:
                 svg_content = svg_match.group(0)
             
             # Validate it's actually SVG
-            if not svg_content.startswith('<svg') or not svg_content.endswith('</svg>'):
-                logger.warning("[DIAGRAM LLM] Invalid SVG generated by LLM")
+            if not svg_content.strip().startswith('<svg'):
+                logger.warning("[DIAGRAM LLM] Invalid SVG - doesn't start with <svg>")
+                return None
+            
+            if not svg_content.strip().endswith('</svg>'):
+                logger.warning("[DIAGRAM LLM] Invalid SVG - doesn't end with </svg>")
                 return None
             
             # Clean up SVG
@@ -851,6 +938,8 @@ Return ONLY the SVG code, starting with <svg and ending with </svg>. No other te
             
         except Exception as e:
             logger.error(f"[DIAGRAM LLM] Error generating diagram: {e}")
+            import traceback
+            traceback.print_exc()
             return None
     
     def _clean_svg(self, svg: str) -> str:
@@ -859,6 +948,8 @@ Return ONLY the SVG code, starting with <svg and ending with </svg>. No other te
         svg = re.sub(r'<\?xml[^>]*\?>', '', svg)
         # Remove any DOCTYPE
         svg = re.sub(r'<!DOCTYPE[^>]*>', '', svg)
+        # Remove any extra whitespace at start
+        svg = svg.strip()
         # Ensure viewBox for responsiveness
         if 'viewBox' not in svg:
             # Try to extract width/height and add viewBox
@@ -932,37 +1023,94 @@ Return ONLY the SVG code, starting with <svg and ending with </svg>. No other te
         use_llm: bool = True
     ) -> Optional[Dict[str, Any]]:
         """
-        Generate a diagram asynchronously with optional LLM enhancement.
+        Generate a diagram using ONLY LLM (no template fallback).
+        
+        IMPORTANT: Diagrams are only generated when user explicitly requests one.
+        This method uses strict keyword detection.
         
         Args:
-            query: User's question
-            response: AI response text
+            query: User's question (checked for explicit diagram request)
+            response: AI response text (used as context for diagram generation)
             low_bandwidth: If True, generate ASCII art instead of SVG
-            use_llm: If True, try LLM-powered generation first
+            use_llm: Always True in new implementation (LLM-only)
             
         Returns:
-            Dictionary with diagram data or None if no diagram needed
+            Dictionary with diagram data or None if no diagram requested
         """
-        should_gen, diagram_type = self.should_include_diagram(query, response)
+        # Use STRICT keyword detection - only explicit diagram requests
+        should_gen, diagram_type = self.should_include_diagram(query)
         
         if not should_gen:
+            logger.info("[DIAGRAM] No explicit diagram request detected - skipping")
             return None
         
-        # For low bandwidth, always use ASCII
+        logger.info(f"[DIAGRAM] Explicit diagram request detected - generating {diagram_type.value}")
+        
+        # For low bandwidth, generate simple ASCII art using LLM
         if low_bandwidth:
-            return self.generate_diagram(query, response, low_bandwidth=True)
+            return await self._generate_ascii_with_llm(query, response, diagram_type)
         
-        # Try LLM-powered generation first
-        if use_llm:
-            try:
-                llm_diagram = await self.generate_diagram_with_llm(query, response, diagram_type)
-                if llm_diagram:
-                    return llm_diagram
-            except Exception as e:
-                logger.warning(f"[DIAGRAM] LLM diagram generation failed, falling back to templates: {e}")
+        # Generate SVG using LLM (no template fallback)
+        try:
+            llm_diagram = await self.generate_diagram_with_llm(query, response, diagram_type)
+            if llm_diagram:
+                return llm_diagram
+            else:
+                logger.warning("[DIAGRAM] LLM diagram generation returned None")
+                # Return a simple error message instead of template fallback
+                return {
+                    "type": "error",
+                    "diagram_type": diagram_type.value,
+                    "content": "Diagram generation failed. Please try again.",
+                    "title": "Error",
+                    "llm_generated": False
+                }
+        except Exception as e:
+            logger.error(f"[DIAGRAM] LLM diagram generation failed: {e}")
+            return {
+                "type": "error",
+                "diagram_type": diagram_type.value,
+                "content": f"Failed to generate diagram: {str(e)}",
+                "title": "Error",
+                "llm_generated": False
+            }
+    
+    async def _generate_ascii_with_llm(
+        self,
+        query: str,
+        response: str,
+        diagram_type: DiagramType
+    ) -> Optional[Dict[str, Any]]:
+        """Generate ASCII art diagram using LLM for low bandwidth mode."""
+        try:
+            prompt = f"""Generate a simple ASCII art diagram for this topic:
+
+Topic: {query}
+Context: {response[:500]}
+
+Create a clear ASCII art diagram using only basic characters: | - + * = > < ^ v [ ] ( )
+Keep it simple and under 20 lines.
+
+Return ONLY the ASCII art, no explanation."""
+
+            result = await self.llm_service.generate(
+                prompt=prompt,
+                temperature=0.3,
+                max_tokens=500
+            )
+            
+            if result.get("success"):
+                return {
+                    "type": "ascii",
+                    "diagram_type": diagram_type.value,
+                    "content": result.get("response", "").strip(),
+                    "title": self._generate_title(query, diagram_type),
+                    "llm_generated": True
+                }
+        except Exception as e:
+            logger.error(f"[DIAGRAM] ASCII generation failed: {e}")
         
-        # Fall back to template-based generation
-        return self.generate_diagram(query, response, low_bandwidth=False)
+        return None
     
     def _generate_title(self, query: str, diagram_type: DiagramType) -> str:
         """Generate a diagram title from the query."""
@@ -970,11 +1118,12 @@ Return ONLY the SVG code, starting with <svg and ending with </svg>. No other te
         title = query.strip()
         
         # Remove question marks and common prefixes
-        title = re.sub(r'^(what is|how does|explain|kya hai|kaise|bataiye)\s*', '', title, flags=re.IGNORECASE)
+        title = re.sub(r'^(what is|how does|explain|kya hai|kaise|bataiye|draw|show|make|create)\s*', '', title, flags=re.IGNORECASE)
+        title = re.sub(r'\b(diagram|flowchart|chart|picture|visual)\b\s*(of|for|about)?\s*', '', title, flags=re.IGNORECASE)
         title = title.rstrip('?।')
         
         # Capitalize and truncate
-        title = title.capitalize()
+        title = title.strip().capitalize()
         if len(title) > 40:
             title = title[:37] + "..."
         

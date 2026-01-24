@@ -133,7 +133,7 @@ export const quizzesApi = {
 
   /**
    * Get comprehensive AI-powered learning insights for the student
-   * This is for the dedicated Learning Insights page
+   * This generates insights on-demand (may take longer)
    * @param {number} days - Number of days to analyze (default: 30)
    * @returns {Promise} Subject-wise insights, weak topics, recommendations, weekly goals
    */
@@ -141,5 +141,24 @@ export const quizzesApi = {
     return apiClient.get('/quizzes/insights/learning', {
       params: { days },
     });
+  },
+
+  /**
+   * Get stored/cached learning insights from user profile
+   * These are auto-generated after each quiz completion
+   * Falls back to generating if no stored insights exist
+   * @returns {Promise} Stored insights with generated_at timestamp
+   */
+  getStoredInsights: () => {
+    return apiClient.get('/quizzes/insights/stored');
+  },
+
+  /**
+   * Manually trigger a refresh of the learning insights
+   * Use when user wants updated analysis
+   * @returns {Promise} Newly generated insights
+   */
+  refreshInsights: () => {
+    return apiClient.post('/quizzes/insights/refresh');
   },
 };

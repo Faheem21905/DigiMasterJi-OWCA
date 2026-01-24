@@ -5,8 +5,9 @@ This service orchestrates the chat pipeline:
 1. Retrieve conversation history for context
 2. Generate embedding for user query
 3. Perform vector search for relevant knowledge
-4. Construct prompt with context + RAG results + user query
-5. Generate response using Ollama LLM
+4. Optionally perform web search for additional information
+5. Construct prompt with context + RAG results + web search + user query
+6. Generate response using Ollama LLM
 
 DigiMasterJi - Multilingual AI Tutor for Rural Education
 """
@@ -19,6 +20,7 @@ from dotenv import load_dotenv
 
 from app.services.llm_service import llm_service
 from app.services.rag_service import rag_service
+from app.services.web_search_service import web_search_service
 from app.database.knowledge_base import vector_search
 from app.database.messages import MessagesDatabase
 from app.models.message import MessageInDB
@@ -51,11 +53,14 @@ RAG_MAX_CONTEXT_TOKENS = int(os.getenv("RAG_MAX_CONTEXT_TOKENS", "1500"))
 LLM_TEMPERATURE = float(os.getenv("LLM_TEMPERATURE", "0.7"))
 LLM_MAX_TOKENS = int(os.getenv("LLM_MAX_TOKENS", "1024"))
 
+# Web search enabled by default when user requests it
+WEB_SEARCH_ENABLED = os.getenv("WEB_SEARCH_ENABLED", "true").lower() == "true"
+
 
 class ChatService:
     """
     Service for handling RAG-enhanced chat interactions.
-    Connects user input → vector search → Ollama prompt → response.
+    Connects user input → vector search → web search → Ollama prompt → response.
     """
     
     def __init__(
@@ -227,13 +232,14 @@ class ChatService:
         
         return "\n".join(context_parts)
     
-    def build_system_prompt(self, has_rag_context: bool = False, profile_data: Optional[Dict[str, Any]] = None) -> str:
+    def build_system_prompt(self, has_rag_context: bool = False, profile_data: Optional[Dict[str, Any]] = None, has_web_search: bool = False) -> str:
         """
         Build the system prompt for DigiMasterJi.
         
         Args:
             has_rag_context: Whether RAG context is available
             profile_data: Optional student profile data for personalization
+            has_web_search: Whether web search results are available
             
         Returns:
             System prompt string
@@ -306,13 +312,19 @@ Key Guidelines:
 
 7. CONTEXT USAGE: You have been provided with relevant learning material. Use this information to give accurate, curriculum-aligned answers. If the learning material is relevant, incorporate it naturally into your explanation. Don't mention that you're using provided material."""
 
+        if has_web_search:
+            base_prompt += """
+
+8. WEB SEARCH RESULTS: You have been provided with web search results. Use this information carefully - verify it makes sense before including it. Cite sources when appropriate. Don't just copy-paste information; explain it in a student-friendly way."""
+
         return base_prompt
     
     def build_final_prompt(
         self,
         user_message: str,
         conversation_history: List[Dict[str, str]],
-        rag_results: List[Dict[str, Any]]
+        rag_results: List[Dict[str, Any]],
+        web_search_context: str = ""
     ) -> str:
         """
         Build the complete prompt for the LLM.
@@ -321,6 +333,7 @@ Key Guidelines:
             user_message: The current user message
             conversation_history: Previous messages in the conversation
             rag_results: Relevant knowledge chunks from RAG
+            web_search_context: Formatted web search results
             
         Returns:
             Complete prompt string
@@ -331,6 +344,10 @@ Key Guidelines:
         rag_context = self.build_rag_context(rag_results)
         if rag_context:
             prompt_parts.append(rag_context)
+        
+        # Add web search context if available
+        if web_search_context:
+            prompt_parts.append(web_search_context)
         
         # Add conversation history if available
         conv_context = self.build_conversation_context(conversation_history)
@@ -349,7 +366,8 @@ Key Guidelines:
         user_message: str,
         subject: Optional[str] = None,
         language: Optional[str] = None,
-        profile_data: Optional[Dict[str, Any]] = None
+        profile_data: Optional[Dict[str, Any]] = None,
+        enable_web_search: bool = False
     ) -> Dict[str, Any]:
         """
         Generate an AI response for a user message.
@@ -357,8 +375,9 @@ Key Guidelines:
         This is the main method that orchestrates the full pipeline:
         1. Get conversation history
         2. Search knowledge base
-        3. Build prompt with profile context
-        4. Generate LLM response
+        3. Optionally perform web search
+        4. Build prompt with profile context
+        5. Generate LLM response
         
         Args:
             conversation_id: The conversation ID
@@ -366,12 +385,14 @@ Key Guidelines:
             subject: Optional subject filter for RAG
             language: Optional language filter for RAG
             profile_data: Optional student profile data for personalization
+            enable_web_search: Whether to include web search results
             
         Returns:
             Dictionary containing:
                 - success: bool
                 - response: str (AI response text)
                 - rag_chunks_used: int (number of RAG chunks used)
+                - web_search_used: bool (whether web search was used)
                 - error: str (if success is False)
         """
         try:
@@ -393,20 +414,45 @@ Key Guidelines:
                 language=language
             )
             
-            # Step 3: Build prompts with profile context
-            logger.info(f"[CHAT FLOW] Building context: {len(history)} history messages + {len(rag_results)} RAG chunks + profile data")
+            # Step 3: Optionally perform web search
+            web_search_context = ""
+            web_search_used = False
+            
+            if enable_web_search and WEB_SEARCH_ENABLED:
+                logger.info(f"[CHAT FLOW] Web search enabled - searching for: '{user_message[:50]}...'")
+                try:
+                    # Perform educational web search
+                    search_results = await web_search_service.search_educational(
+                        query=user_message,
+                        subject=subject,
+                        grade_level=profile_data.get("grade_level") if profile_data else None
+                    )
+                    
+                    if search_results.get("success") and search_results.get("has_results"):
+                        web_search_context = web_search_service.format_results_for_llm(search_results)
+                        web_search_used = True
+                        logger.info(f"[CHAT FLOW] Web search returned {len(search_results.get('results', []))} results")
+                    else:
+                        logger.info("[CHAT FLOW] Web search returned no results")
+                except Exception as e:
+                    logger.warning(f"[CHAT FLOW] Web search failed (non-fatal): {e}")
+            
+            # Step 4: Build prompts with profile context
+            logger.info(f"[CHAT FLOW] Building context: {len(history)} history messages + {len(rag_results)} RAG chunks + profile data + web_search={web_search_used}")
             system_prompt = self.build_system_prompt(
                 has_rag_context=len(rag_results) > 0,
-                profile_data=profile_data
+                profile_data=profile_data,
+                has_web_search=web_search_used
             )
             final_prompt = self.build_final_prompt(
                 user_message=user_message,
                 conversation_history=history,
-                rag_results=rag_results
+                rag_results=rag_results,
+                web_search_context=web_search_context
             )
             logger.info(f"[CHAT FLOW] Context built and ready to send to LLM (system prompt: {len(system_prompt)} chars, user prompt: {len(final_prompt)} chars)")
             
-            # Step 4: Generate response using LLM
+            # Step 5: Generate response using LLM
             logger.info(f"[CHAT FLOW] Sending request to Ollama LLM...")
             llm_result = await llm_service.generate(
                 prompt=final_prompt,
@@ -441,6 +487,7 @@ Key Guidelines:
                 "success": True,
                 "response": response_text,
                 "rag_chunks_used": len(rag_results),
+                "web_search_used": web_search_used,
                 "model": llm_result.get("model", "unknown"),
                 "generation_time_ns": llm_result.get("total_duration", 0)
             }
@@ -452,7 +499,8 @@ Key Guidelines:
             return {
                 "success": False,
                 "error": str(e),
-                "rag_chunks_used": 0
+                "rag_chunks_used": 0,
+                "web_search_used": False
             }
     
     async def generate_response_stream(
@@ -461,7 +509,8 @@ Key Guidelines:
         user_message: str,
         subject: Optional[str] = None,
         language: Optional[str] = None,
-        profile_data: Optional[Dict[str, Any]] = None
+        profile_data: Optional[Dict[str, Any]] = None,
+        enable_web_search: bool = False
     ) -> AsyncGenerator[str, None]:
         """
         Generate an AI response as a stream of tokens.
@@ -475,6 +524,7 @@ Key Guidelines:
             subject: Optional subject filter for RAG
             language: Optional language filter for RAG
             profile_data: Optional student profile data for personalization
+            enable_web_search: Whether to include web search results
             
         Yields:
             Individual response tokens as they are generated
@@ -492,16 +542,38 @@ Key Guidelines:
                 language=language
             )
             
-            # Step 3: Build prompts with profile context
-            logger.info(f"[CHAT FLOW STREAM] Building context: {len(history)} history messages + {len(rag_results)} RAG chunks")
+            # Step 3: Optionally perform web search
+            web_search_context = ""
+            web_search_used = False
+            
+            if enable_web_search and WEB_SEARCH_ENABLED:
+                logger.info(f"[CHAT FLOW STREAM] Web search enabled - searching...")
+                try:
+                    search_results = await web_search_service.search_educational(
+                        query=user_message,
+                        subject=subject,
+                        grade_level=profile_data.get("grade_level") if profile_data else None
+                    )
+                    
+                    if search_results.get("success") and search_results.get("has_results"):
+                        web_search_context = web_search_service.format_results_for_llm(search_results)
+                        web_search_used = True
+                        logger.info(f"[CHAT FLOW STREAM] Web search returned {len(search_results.get('results', []))} results")
+                except Exception as e:
+                    logger.warning(f"[CHAT FLOW STREAM] Web search failed (non-fatal): {e}")
+            
+            # Step 4: Build prompts with profile context
+            logger.info(f"[CHAT FLOW STREAM] Building context: {len(history)} history messages + {len(rag_results)} RAG chunks + web_search={web_search_used}")
             system_prompt = self.build_system_prompt(
                 has_rag_context=len(rag_results) > 0,
-                profile_data=profile_data
+                profile_data=profile_data,
+                has_web_search=web_search_used
             )
             final_prompt = self.build_final_prompt(
                 user_message=user_message,
                 conversation_history=history,
-                rag_results=rag_results
+                rag_results=rag_results,
+                web_search_context=web_search_context
             )
             
             # Step 4: Stream response using LLM

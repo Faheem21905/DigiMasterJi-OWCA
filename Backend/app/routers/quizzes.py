@@ -5,10 +5,11 @@ API endpoints for quiz generation, retrieval, and submission.
 Handles daily streak and gamification logic.
 """
 
-from fastapi import APIRouter, HTTPException, Depends, status
+from fastapi import APIRouter, HTTPException, Depends, status, BackgroundTasks
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from typing import List
 import logging
+import asyncio
 from datetime import date, datetime, timedelta
 
 from app.models.quiz import (
@@ -219,12 +220,14 @@ async def get_quiz_by_id(
 async def submit_quiz(
     quiz_id: str,
     submission: QuizSubmission,
+    background_tasks: BackgroundTasks,
     profile_id: str = Depends(get_current_profile_id)
 ):
     """
     Submit quiz answers and get results.
     
     Calculates score, awards XP, and updates streak.
+    Automatically triggers learning insights generation in background.
     """
     try:
         logger.info(f"[QUIZ] Submitting quiz: {quiz_id} for profile: {profile_id}")
@@ -327,6 +330,30 @@ async def submit_quiz(
             f"[QUIZ] Quiz submitted: score={score}%, xp={xp_earned}, "
             f"streak={streak_days} (is_backlog={is_backlog}, is_today={is_today_quiz})"
         )
+        
+        # Trigger background task to auto-generate and store learning insights
+        # This runs asynchronously and doesn't block the response
+        quiz_result = {
+            "score": score,
+            "correct_count": correct_count,
+            "total_questions": total_questions,
+            "xp_earned": xp_earned
+        }
+        
+        async def generate_insights_async():
+            """Background task wrapper for async insight generation."""
+            try:
+                await quiz_summary_service.auto_generate_and_store_insights(
+                    profile_id=profile_id,
+                    quiz_id=quiz_id,
+                    quiz_result=quiz_result
+                )
+            except Exception as e:
+                logger.error(f"[QUIZ] Background insights generation failed: {e}")
+        
+        # Schedule the background task
+        background_tasks.add_task(asyncio.create_task, generate_insights_async())
+        logger.info(f"[QUIZ] Scheduled background insights generation for profile: {profile_id}")
         
         return QuizSubmissionResponse(
             quiz_id=quiz_id,
@@ -539,6 +566,91 @@ async def get_learning_insights(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to generate learning insights: {str(e)}"
+        )
+
+
+@router.get("/insights/stored", status_code=status.HTTP_200_OK)
+async def get_stored_insights(
+    profile_id: str = Depends(get_current_profile_id)
+):
+    """
+    Get stored learning insights from profile (auto-generated after quiz completion).
+    
+    This endpoint returns insights that were auto-generated in the background
+    after quiz completion. No LLM call is made - just retrieves stored data.
+    
+    Returns:
+        Stored insights or message indicating no insights available
+    """
+    try:
+        logger.info(f"[STORED INSIGHTS] Fetching stored insights for profile: {profile_id}")
+        
+        # Get stored insights from profile
+        stored_insights = await ProfilesDatabase.get_learning_insights(profile_id)
+        
+        if not stored_insights:
+            return {
+                "has_data": False,
+                "message": "No learning insights available yet. Complete some quizzes to generate insights!",
+                "message_hindi": "अभी तक कोई लर्निंग इनसाइट्स उपलब्ध नहीं है। इनसाइट्स जनरेट करने के लिए कुछ क्विज़ पूरे करें!"
+            }
+        
+        return {
+            "has_data": True,
+            **stored_insights
+        }
+        
+    except Exception as e:
+        logger.error(f"[STORED INSIGHTS] Error fetching stored insights: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch stored insights: {str(e)}"
+        )
+
+
+@router.post("/insights/refresh", status_code=status.HTTP_200_OK)
+async def refresh_insights(
+    background_tasks: BackgroundTasks,
+    profile_id: str = Depends(get_current_profile_id)
+):
+    """
+    Manually trigger a refresh of learning insights.
+    
+    This regenerates insights based on latest quiz performance.
+    The generation happens in background and returns immediately.
+    
+    Returns:
+        Confirmation that refresh has been scheduled
+    """
+    try:
+        logger.info(f"[INSIGHTS REFRESH] Manual refresh triggered for profile: {profile_id}")
+        
+        # Schedule background task
+        async def refresh_async():
+            """Background task wrapper for insight refresh."""
+            try:
+                # Use a dummy quiz result since we're regenerating from all data
+                await quiz_summary_service.auto_generate_and_store_insights(
+                    profile_id=profile_id,
+                    quiz_id="manual_refresh",
+                    quiz_result={}
+                )
+            except Exception as e:
+                logger.error(f"[INSIGHTS REFRESH] Background refresh failed: {e}")
+        
+        background_tasks.add_task(asyncio.create_task, refresh_async())
+        
+        return {
+            "status": "scheduled",
+            "message": "Learning insights refresh has been scheduled. Check back in a few moments.",
+            "message_hindi": "लर्निंग इनसाइट्स रिफ्रेश शेड्यूल हो गया है। कुछ देर में वापस आकर चेक करें।"
+        }
+        
+    except Exception as e:
+        logger.error(f"[INSIGHTS REFRESH] Error scheduling refresh: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to schedule insights refresh: {str(e)}"
         )
 
 

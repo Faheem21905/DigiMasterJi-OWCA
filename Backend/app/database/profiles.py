@@ -6,10 +6,10 @@ CRUD operations for the student profiles collection.
 
 from motor.motor_asyncio import AsyncIOMotorClient
 from bson import ObjectId
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from datetime import datetime
 
-from app.models.profile import ProfileCreate, ProfileInDB, ProfileUpdate, Gamification, LearningPreferences
+from app.models.profile import ProfileCreate, ProfileInDB, ProfileUpdate, Gamification, LearningPreferences, StoredLearningInsights
 from app.database.mongodb import get_database
 
 
@@ -472,4 +472,77 @@ class ProfilesDatabase:
         
         if result:
             return ProfileInDB(**result)
+        return None
+
+    @staticmethod
+    async def update_learning_insights(
+        profile_id: str,
+        insights_data: Dict[str, Any]
+    ) -> Optional[ProfileInDB]:
+        """
+        Update profile's learning insights (auto-generated after quiz).
+        
+        Args:
+            profile_id: Profile's ObjectId as string
+            insights_data: Learning insights dictionary from quiz_summary_service
+            
+        Returns:
+            Updated ProfileInDB or None
+        """
+        if not ObjectId.is_valid(profile_id):
+            return None
+            
+        collection = await ProfilesDatabase.get_collection()
+        
+        # Build the insights document for storage
+        insights_doc = {
+            "generated_at": datetime.utcnow(),
+            "overall_score": insights_data.get("overall_score", 0.0),
+            "total_quizzes_analyzed": insights_data.get("total_quizzes_analyzed", 0),
+            "subjects": insights_data.get("subjects", []),
+            "weak_areas_summary": insights_data.get("weak_areas_summary", ""),
+            "strengths_summary": insights_data.get("strengths_summary", ""),
+            "personalized_recommendations": insights_data.get("personalized_recommendations", []),
+            "weekly_goals": insights_data.get("weekly_goals", []),
+            "motivational_message": insights_data.get("motivational_message", ""),
+            "motivational_message_hindi": insights_data.get("motivational_message_hindi", "")
+        }
+        
+        result = await collection.find_one_and_update(
+            {"_id": ObjectId(profile_id)},
+            {
+                "$set": {
+                    "learning_insights": insights_doc,
+                    "updated_at": datetime.utcnow()
+                }
+            },
+            return_document=True
+        )
+        
+        if result:
+            return ProfileInDB(**result)
+        return None
+
+    @staticmethod
+    async def get_learning_insights(profile_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Get stored learning insights for a profile.
+        
+        Args:
+            profile_id: Profile's ObjectId as string
+            
+        Returns:
+            Learning insights dictionary or None
+        """
+        if not ObjectId.is_valid(profile_id):
+            return None
+            
+        collection = await ProfilesDatabase.get_collection()
+        profile_doc = await collection.find_one(
+            {"_id": ObjectId(profile_id)},
+            {"learning_insights": 1}
+        )
+        
+        if profile_doc and profile_doc.get("learning_insights"):
+            return profile_doc["learning_insights"]
         return None

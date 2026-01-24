@@ -3,18 +3,22 @@ Quiz Summary Service - AI-Powered Learning Analytics
 =====================================================
 Generates personalized learning summaries based on quiz performance.
 Identifies weak topics and provides subject-wise recommendations.
+Includes RAG integration for contextual educational content.
 
 DigiMasterJi - Multilingual AI Tutor for Rural Education
 """
 
 import json
 import logging
+import asyncio
 from typing import List, Dict, Any, Optional
 from datetime import datetime, timedelta
 
 from app.services.llm_service import LLMService
+from app.services.rag_service import rag_service
 from app.database.quizzes import QuizzesDatabase
 from app.database.profiles import ProfilesDatabase
+from app.database.knowledge_base import vector_search
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +28,323 @@ class QuizSummaryService:
     
     def __init__(self):
         self.llm_service = LLMService(timeout=180.0)
+    
+    async def auto_generate_and_store_insights(
+        self,
+        profile_id: str,
+        quiz_id: str,
+        quiz_result: Dict[str, Any]
+    ) -> bool:
+        """
+        Automatically generate and store learning insights after quiz completion.
+        This runs as a background task after quiz submission.
+        
+        Args:
+            profile_id: Student profile ID
+            quiz_id: The completed quiz ID
+            quiz_result: Quiz submission results
+            
+        Returns:
+            True if insights were generated and stored successfully
+        """
+        try:
+            logger.info(f"[AUTO INSIGHTS] Starting background insight generation for profile: {profile_id}")
+            
+            # Get profile data
+            profile = await ProfilesDatabase.get_profile_by_id(profile_id)
+            if not profile:
+                logger.error(f"[AUTO INSIGHTS] Profile not found: {profile_id}")
+                return False
+            
+            profile_data = {
+                "name": profile.name,
+                "age": profile.age,
+                "grade_level": profile.grade_level,
+                "preferred_language": profile.preferred_language
+            }
+            
+            # Get all completed quizzes for comprehensive analysis
+            completed_quizzes = await QuizzesDatabase.get_completed_quizzes_by_profile(
+                profile_id=profile_id,
+                days=30
+            )
+            
+            if not completed_quizzes:
+                logger.info(f"[AUTO INSIGHTS] No quizzes to analyze for profile: {profile_id}")
+                return False
+            
+            # Analyze quiz history
+            history_analysis = self._analyze_quiz_history(completed_quizzes)
+            
+            # Get RAG context for weak topics to enhance insights
+            rag_context = await self._get_rag_context_for_insights(history_analysis)
+            
+            # Generate comprehensive insights with RAG context
+            insights = await self._generate_insights_with_llm_and_rag(
+                profile_data=profile_data,
+                history_analysis=history_analysis,
+                quizzes=completed_quizzes,
+                rag_context=rag_context
+            )
+            
+            if not insights:
+                logger.error(f"[AUTO INSIGHTS] Failed to generate insights for profile: {profile_id}")
+                return False
+            
+            # Transform insights to storage format
+            storage_data = self._transform_insights_for_storage(insights)
+            
+            # Store insights in profile
+            result = await ProfilesDatabase.update_learning_insights(
+                profile_id=profile_id,
+                insights_data=storage_data
+            )
+            
+            if result:
+                logger.info(f"[AUTO INSIGHTS] Successfully stored insights for profile: {profile_id}")
+                return True
+            else:
+                logger.error(f"[AUTO INSIGHTS] Failed to store insights for profile: {profile_id}")
+                return False
+                
+        except Exception as e:
+            logger.error(f"[AUTO INSIGHTS] Error in auto-generation: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
+    
+    async def _get_rag_context_for_insights(
+        self,
+        history_analysis: Dict[str, Any]
+    ) -> str:
+        """
+        Get relevant educational content from RAG for weak topics.
+        
+        Args:
+            history_analysis: Analysis of quiz history
+            
+        Returns:
+            RAG context string for LLM prompt
+        """
+        try:
+            weak_topics = []
+            
+            # Extract weak areas from subject stats
+            for subject, stats in history_analysis.get("subject_stats", {}).items():
+                if stats.get("average_score", 100) < 70:
+                    topics = stats.get("topics", [])
+                    weak_topics.extend(topics[:3])  # Get top 3 weak topics per subject
+            
+            # Also add topics from weak questions
+            weak_questions = history_analysis.get("weak_questions", [])
+            for wq in weak_questions[:5]:
+                weak_topics.append(wq.get("topic", ""))
+            
+            if not weak_topics:
+                return ""
+            
+            # Create a search query from weak topics
+            search_query = " ".join(set(weak_topics[:10]))
+            
+            # Generate embedding and search knowledge base
+            query_embedding = rag_service.generate_embedding(search_query)
+            
+            rag_results = await vector_search(
+                query_embedding=query_embedding,
+                limit=5,
+                subject=None,
+                language=None
+            )
+            
+            # Build RAG context string
+            if not rag_results:
+                return ""
+            
+            context_parts = []
+            context_parts.append("=== Relevant Educational Content for Weak Topics ===")
+            
+            for i, chunk in enumerate(rag_results, 1):
+                title = chunk.get("title", "Untitled")
+                content = chunk.get("content_chunk", "")[:500]  # Limit content
+                subject = chunk.get("subject", "General")
+                
+                context_parts.append(f"\n[Resource {i}: {subject} - {title}]")
+                context_parts.append(content)
+            
+            context_parts.append("\n=== End of Educational Content ===")
+            
+            logger.info(f"[AUTO INSIGHTS] Retrieved {len(rag_results)} RAG chunks for insights")
+            return "\n".join(context_parts)
+            
+        except Exception as e:
+            logger.error(f"[AUTO INSIGHTS] Error getting RAG context: {e}")
+            return ""
+    
+    async def _generate_insights_with_llm_and_rag(
+        self,
+        profile_data: Dict[str, Any],
+        history_analysis: Dict[str, Any],
+        quizzes: List,
+        rag_context: str
+    ) -> Optional[Dict[str, Any]]:
+        """Generate comprehensive learning insights using LLM with RAG context."""
+        
+        language = profile_data.get("preferred_language", "English")
+        grade = profile_data.get("grade_level", "6th")
+        name = profile_data.get("name", "Student")
+        
+        # Build subject breakdown
+        subject_breakdown = []
+        for subject, stats in history_analysis.get("subject_stats", {}).items():
+            subject_breakdown.append({
+                "subject": subject,
+                "quizzes_taken": stats["total_quizzes"],
+                "average_score": round(stats.get("average_score", 0), 1),
+                "topics_covered": stats.get("topics", [])[:5],
+                "weak_questions_count": len(stats.get("weak_questions", []))
+            })
+        
+        # Get sample weak questions
+        weak_questions_sample = history_analysis.get("weak_questions", [])[:10]
+        
+        prompt = f"""You are DigiMasterJi, an educational AI assistant. Generate comprehensive learning insights for a student.
+
+Student Profile:
+- Name: {name}
+- Grade: {grade}
+- Preferred Language: {language}
+
+Performance Overview:
+- Total Quizzes: {history_analysis.get('total_quizzes', 0)}
+- Overall Average: {history_analysis.get('overall_average', 0)}%
+- Performance Trend: {history_analysis.get('recent_trend', 'neutral')}
+- Strong Topics: {', '.join(history_analysis.get('strong_topics', [])) or 'None identified yet'}
+
+Subject-wise Breakdown:
+{json.dumps(subject_breakdown, indent=2)}
+
+Sample Questions Student Got Wrong:
+{json.dumps(weak_questions_sample, indent=2)}
+
+{rag_context if rag_context else ""}
+
+Based on the above data and the educational content provided, generate a JSON response with this EXACT structure (no markdown, pure JSON):
+{{
+    "overall_assessment": {{
+        "level": "excellent|good|average|needs_improvement",
+        "summary": "2-3 sentence overall assessment",
+        "summary_hindi": "Same in Hindi"
+    }},
+    "subject_insights": [
+        {{
+            "subject": "Subject name",
+            "status": "strong|average|weak",
+            "score_average": 0,
+            "performance_trend": "improving|stable|declining",
+            "improvement_areas": ["List of specific topics/concepts to improve"],
+            "strong_areas": ["List of topics the student is good at"],
+            "recommendation": "Specific recommendation for this subject",
+            "recommendation_hindi": "Same in Hindi"
+        }}
+    ],
+    "weak_topics_explanation": [
+        {{
+            "topic": "Topic name",
+            "subject": "Subject",
+            "why_important": "Why this topic matters",
+            "simple_explanation": "Brief, grade-appropriate explanation using curriculum content",
+            "simple_explanation_hindi": "Same in Hindi",
+            "practice_tip": "How to practice this topic"
+        }}
+    ],
+    "strengths": [
+        {{
+            "area": "Area of strength",
+            "praise": "Encouraging message about this strength",
+            "praise_hindi": "Same in Hindi"
+        }}
+    ],
+    "weekly_goals": [
+        {{
+            "goal": "Specific, achievable goal",
+            "goal_hindi": "Same in Hindi",
+            "subject": "Related subject"
+        }}
+    ],
+    "personalized_recommendations": ["List of 3-5 specific action items for the student"],
+    "motivational_message": "An encouraging message based on their progress",
+    "motivational_message_hindi": "Same in Hindi"
+}}
+
+Important:
+- Use the educational content provided to give accurate, curriculum-aligned recommendations
+- Be specific based on the actual performance data
+- Keep all explanations suitable for {grade} grade students
+- Provide actionable, practical recommendations
+- Be encouraging while honest about areas needing improvement
+- Return ONLY valid JSON, no other text"""
+
+        try:
+            result = await self.llm_service.generate(
+                prompt=prompt,
+                temperature=0.7,
+                max_tokens=3000
+            )
+            
+            if not result.get("success"):
+                logger.error(f"[AUTO INSIGHTS] LLM generation failed: {result.get('error')}")
+                return self._get_fallback_insights(history_analysis)
+            
+            response_text = result.get("response", "")
+            
+            # Parse JSON from response
+            insights = self._parse_json_response(response_text)
+            if insights:
+                insights["has_data"] = True
+                insights["profile_name"] = name
+                insights["grade_level"] = grade
+                insights["total_quizzes"] = history_analysis.get("total_quizzes", 0)
+                insights["overall_average"] = history_analysis.get("overall_average", 0)
+                insights["performance_trend"] = history_analysis.get("recent_trend", "neutral")
+                insights["generated_at"] = datetime.utcnow().isoformat()
+                insights["analysis_period_days"] = 30
+                insights["rag_enhanced"] = bool(rag_context)
+                return insights
+            
+            return self._get_fallback_insights(history_analysis)
+            
+        except Exception as e:
+            logger.error(f"[AUTO INSIGHTS] Error in LLM generation: {e}")
+            return self._get_fallback_insights(history_analysis)
+    
+    def _transform_insights_for_storage(self, insights: Dict[str, Any]) -> Dict[str, Any]:
+        """Transform LLM insights to storage format for ProfilesDatabase."""
+        
+        # Extract subject data
+        subjects = []
+        for si in insights.get("subject_insights", []):
+            subjects.append({
+                "subject": si.get("subject", ""),
+                "average_score": si.get("score_average", 0),
+                "total_quizzes": 0,  # Will be updated from stats
+                "performance_trend": si.get("performance_trend", "stable"),
+                "weak_topics": si.get("improvement_areas", []),
+                "strong_topics": si.get("strong_areas", []),
+                "recommendation": si.get("recommendation", "")
+            })
+        
+        # Build storage format
+        return {
+            "overall_score": insights.get("overall_average", 0),
+            "total_quizzes_analyzed": insights.get("total_quizzes", 0),
+            "subjects": subjects,
+            "weak_areas_summary": insights.get("overall_assessment", {}).get("summary", ""),
+            "strengths_summary": ", ".join([s.get("area", "") for s in insights.get("strengths", [])]),
+            "personalized_recommendations": insights.get("personalized_recommendations", []),
+            "weekly_goals": [g.get("goal", "") for g in insights.get("weekly_goals", [])],
+            "motivational_message": insights.get("motivational_message", ""),
+            "motivational_message_hindi": insights.get("motivational_message_hindi", "")
+        }
     
     async def generate_quiz_summary(
         self,

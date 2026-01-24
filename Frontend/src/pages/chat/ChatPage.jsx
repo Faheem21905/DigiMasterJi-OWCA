@@ -126,12 +126,16 @@ export default function ChatPage() {
       const profileId = activeProfile?._id || activeProfile?.id;
       // Include TTS preference in the message
       const includeAudio = options.includeAudio !== undefined ? options.includeAudio : enableTTS;
+      // Get web search and diagram options from the input
+      const enableWebSearch = options.enableWebSearch || false;
+      const includeDiagram = options.includeDiagram || false;
       // Use streaming by default for real-time token display
       // Pass lowBandwidth flag for ASCII diagrams instead of SVG when data saver is on
       await sendMessageStream(content, profileId, { 
         includeAudio,
         lowBandwidth: isLowBandwidth,
-        includeDiagram: true, // Always request diagrams when appropriate
+        includeDiagram: includeDiagram,
+        enableWebSearch: enableWebSearch,
       });
     } catch (err) {
       console.error('Error sending message:', err);
@@ -145,12 +149,16 @@ export default function ChatPage() {
       const profileId = activeProfile?._id || activeProfile?.id;
       // Include TTS preference in the voice message
       const includeAudio = options.includeAudio !== undefined ? options.includeAudio : enableTTS;
+      // Get web search and diagram options from the input
+      const enableWebSearch = options.enableWebSearch || false;
+      const includeDiagram = options.includeDiagram || false;
       await sendVoiceMessage(audioBlob, profileId, {
         autoSend: true,
         includeAudio,
         slowAudio: false,
         lowBandwidth: isLowBandwidth,
-        includeDiagram: true,
+        includeDiagram: includeDiagram,
+        enableWebSearch: enableWebSearch,
       });
     } catch (err) {
       console.error('Error sending voice message:', err);

@@ -61,7 +61,8 @@ class ChatMessageRequest(BaseModel):
     slow_audio: bool = Field(default=False, description="Whether to speak slowly (useful for learning)")
     stream: bool = Field(default=False, description="Whether to stream the response via SSE")
     low_bandwidth: bool = Field(default=False, description="Low bandwidth mode - uses ASCII diagrams instead of SVG")
-    include_diagram: bool = Field(default=True, description="Whether to include visual diagrams when appropriate")
+    include_diagram: bool = Field(default=False, description="Whether to include visual diagrams when appropriate")
+    enable_web_search: bool = Field(default=False, description="Enable web search for additional information")
     
     class Config:
         json_schema_extra = {
@@ -71,7 +72,8 @@ class ChatMessageRequest(BaseModel):
                 "slow_audio": False,
                 "stream": True,
                 "low_bandwidth": False,
-                "include_diagram": True
+                "include_diagram": False,
+                "enable_web_search": False
             }
         }
 

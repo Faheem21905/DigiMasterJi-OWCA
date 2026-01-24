@@ -40,7 +40,30 @@ class Gamification(BaseModel):
     current_streak_days: int = Field(default=0, ge=0)
     last_activity_date: Optional[datetime] = None
     badges: List[str] = Field(default_factory=list)
-    
+
+class SubjectInsightData(BaseModel):
+    """Individual subject insight data stored in profile."""
+    subject: str
+    average_score: float
+    total_quizzes: int
+    performance_trend: str  # "improving", "declining", "stable"
+    weak_topics: List[str] = Field(default_factory=list)
+    strong_topics: List[str] = Field(default_factory=list)
+    recommendation: str = ""
+
+
+class StoredLearningInsights(BaseModel):
+    """Learning insights stored in profile after quiz completion."""
+    generated_at: datetime = Field(default_factory=datetime.utcnow)
+    overall_score: float = 0.0
+    total_quizzes_analyzed: int = 0
+    subjects: List[SubjectInsightData] = Field(default_factory=list)
+    weak_areas_summary: str = ""
+    strengths_summary: str = ""
+    personalized_recommendations: List[str] = Field(default_factory=list)
+    weekly_goals: List[str] = Field(default_factory=list)
+    motivational_message: str = ""
+    motivational_message_hindi: str = ""    
     class Config:
         json_schema_extra = {
             "example": {
@@ -150,6 +173,7 @@ class ProfileInDB(ProfileBase):
     avatar: str = Field(default="default_avatar.png")
     gamification: Gamification = Field(default_factory=Gamification)
     learning_preferences: LearningPreferences = Field(default_factory=LearningPreferences)
+    learning_insights: Optional[StoredLearningInsights] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     
@@ -195,6 +219,7 @@ class ProfileResponse(BaseModel):
     avatar: str
     gamification: Gamification
     learning_preferences: LearningPreferences
+    learning_insights: Optional[StoredLearningInsights] = None
     created_at: datetime
     updated_at: datetime
     
