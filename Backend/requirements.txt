@@ -1,0 +1,53 @@
+# DigiMasterJi Backend Dependencies
+# ==================================
+
+# FastAPI and web framework
+fastapi
+uvicorn[standard]
+python-multipart
+httpx
+aiofiles
+
+# Database
+motor
+
+# Data validation
+pydantic
+pydantic-settings
+
+# Authentication
+python-jose[cryptography]
+passlib[bcrypt]
+bcrypt==4.3.0
+
+# Environment
+python-dotenv
+
+# Background Tasks (Daily Quiz Generation)
+APScheduler
+
+# AI/ML Dependencies
+# ------------------
+
+torch
+
+# Speech-to-Text (OpenAI Whisper)
+openai-whisper
+
+# Text-to-Speech (Google TTS)
+gTTS
+
+# RAG Pipeline
+sentence-transformers
+PyMuPDF
+tiktoken
+
+# Audio processing
+soundfile
+numpy
+
+# Development tools
+pytest
+pytest-asyncio
+black
+flake8
