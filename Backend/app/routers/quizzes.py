@@ -14,11 +14,12 @@ from datetime import date, datetime, timedelta
 from app.models.quiz import (
     QuizResponse, QuizQuestionsResponse, QuizSubmission,
     QuizSubmissionResponse, QuizCreate, QuizRevisionResponse, QuizRevisionQuestion,
-    SyncQuizResponse
+    SyncQuizResponse, QuizSummaryResponse, LearningInsightsResponse
 )
 from app.database.quizzes import QuizzesDatabase
 from app.database.profiles import ProfilesDatabase
 from app.services.quiz_service import quiz_service
+from app.services.quiz_summary_service import quiz_summary_service
 from app.utils.security import decode_access_token
 
 logger = logging.getLogger(__name__)
@@ -349,6 +350,195 @@ async def submit_quiz(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to submit quiz: {str(e)}"
+        )
+
+
+# =============================================================================
+# Quiz Summary & Learning Insights Endpoints
+# =============================================================================
+
+@router.post("/{quiz_id}/summary", response_model=QuizSummaryResponse, status_code=status.HTTP_200_OK)
+async def generate_quiz_summary(
+    quiz_id: str,
+    profile_id: str = Depends(get_current_profile_id)
+):
+    """
+    Generate an AI-powered summary immediately after completing a quiz.
+    
+    Returns personalized insights including:
+    - Performance assessment
+    - Topics to review
+    - Concept explanations for wrong answers
+    - Study tips
+    - Encouraging message
+    
+    The summary takes into account both the current quiz and historical performance.
+    """
+    try:
+        logger.info(f"[QUIZ SUMMARY] Generating summary for quiz: {quiz_id}, profile: {profile_id}")
+        
+        # Get the quiz
+        quiz = await QuizzesDatabase.get_quiz_by_id(quiz_id)
+        
+        if not quiz:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Quiz not found"
+            )
+        
+        # Verify quiz belongs to profile
+        if str(quiz.profile_id) != profile_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied to this quiz"
+            )
+        
+        # Check if quiz is completed
+        if quiz.status != "completed":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Quiz must be completed to generate summary"
+            )
+        
+        # Build quiz result data
+        correct_count = 0
+        for q in quiz.questions:
+            q_dict = q.model_dump() if hasattr(q, 'model_dump') else q
+            if q_dict.get("user_answer") == q_dict.get("correct_answer"):
+                correct_count += 1
+        
+        quiz_result = {
+            "score": quiz.score or 0,
+            "correct_count": correct_count,
+            "total_questions": len(quiz.questions),
+            "xp_earned": quiz.xp_earned or 0
+        }
+        
+        # Generate summary using AI
+        summary = await quiz_summary_service.generate_quiz_summary(
+            profile_id=profile_id,
+            quiz_id=quiz_id,
+            quiz_result=quiz_result
+        )
+        
+        if not summary:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to generate quiz summary"
+            )
+        
+        # Convert to response model
+        from datetime import datetime
+        
+        return QuizSummaryResponse(
+            quiz_id=summary.get("quiz_id", quiz_id),
+            topic=summary.get("topic", quiz.topic),
+            score=summary.get("score", quiz.score or 0),
+            correct_count=summary.get("correct_count", correct_count),
+            total_questions=summary.get("total_questions", len(quiz.questions)),
+            performance_level=summary.get("performance_level", "good"),
+            summary_text=summary.get("summary_text", ""),
+            summary_text_hindi=summary.get("summary_text_hindi"),
+            topics_to_review=summary.get("topics_to_review", []),
+            encouragement=summary.get("encouragement", "Keep learning!"),
+            encouragement_hindi=summary.get("encouragement_hindi"),
+            study_tips=summary.get("study_tips", []),
+            concepts_explained=[
+                {"concept": c.get("concept", ""), "explanation": c.get("explanation", ""), "explanation_hindi": c.get("explanation_hindi")}
+                for c in summary.get("concepts_explained", [])
+            ],
+            next_steps=summary.get("next_steps", ""),
+            generated_at=datetime.fromisoformat(summary["generated_at"]) if summary.get("generated_at") else datetime.utcnow()
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"[QUIZ SUMMARY] Error generating summary: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to generate quiz summary: {str(e)}"
+        )
+
+
+@router.get("/insights/learning", response_model=LearningInsightsResponse, status_code=status.HTTP_200_OK)
+async def get_learning_insights(
+    days: int = 30,
+    profile_id: str = Depends(get_current_profile_id)
+):
+    """
+    Get comprehensive AI-powered learning insights for the student.
+    
+    This endpoint analyzes all quiz performance over the specified period
+    and generates subject-wise insights including:
+    - Overall assessment
+    - Subject-wise analysis with recommendations
+    - Weak topics with explanations
+    - Strengths recognition
+    - Weekly goals
+    - Motivational message
+    
+    Args:
+        days: Number of days to analyze (default: 30)
+        
+    Returns:
+        LearningInsightsResponse with complete analytics
+    """
+    try:
+        logger.info(f"[LEARNING INSIGHTS] Generating insights for profile: {profile_id}, days: {days}")
+        
+        # Generate insights
+        insights = await quiz_summary_service.get_learning_insights(
+            profile_id=profile_id,
+            days=days
+        )
+        
+        if not insights:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to generate learning insights"
+            )
+        
+        # If no data, return appropriate message
+        if not insights.get("has_data", True):
+            return LearningInsightsResponse(
+                has_data=False,
+                message=insights.get("message"),
+                message_hindi=insights.get("message_hindi")
+            )
+        
+        # Build response model
+        from datetime import datetime
+        
+        return LearningInsightsResponse(
+            has_data=True,
+            profile_name=insights.get("profile_name"),
+            grade_level=insights.get("grade_level"),
+            total_quizzes=insights.get("total_quizzes", 0),
+            overall_average=insights.get("overall_average", 0),
+            performance_trend=insights.get("performance_trend", "neutral"),
+            analysis_period_days=insights.get("analysis_period_days", days),
+            overall_assessment=insights.get("overall_assessment"),
+            subject_insights=insights.get("subject_insights", []),
+            weak_topics_explanation=insights.get("weak_topics_explanation", []),
+            strengths=insights.get("strengths", []),
+            weekly_goals=insights.get("weekly_goals", []),
+            motivational_message=insights.get("motivational_message"),
+            motivational_message_hindi=insights.get("motivational_message_hindi"),
+            generated_at=datetime.fromisoformat(insights["generated_at"]) if insights.get("generated_at") else datetime.utcnow()
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"[LEARNING INSIGHTS] Error generating insights: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to generate learning insights: {str(e)}"
         )
 
 
@@ -794,4 +984,146 @@ async def get_quizzes_for_sync(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch quizzes: {str(e)}"
+        )
+
+
+# ============================================
+# Quiz Summary & Learning Insights Endpoints
+# ============================================
+
+@router.post("/{quiz_id}/summary", response_model=dict, status_code=status.HTTP_200_OK)
+async def generate_quiz_summary(
+    quiz_id: str,
+    profile_id: str = Depends(get_current_profile_id)
+):
+    """
+    Generate AI-powered summary for a completed quiz.
+    
+    Returns personalized insights based on:
+    - Current quiz performance
+    - Historical quiz results
+    - Topics/concepts the student struggled with
+    
+    The response is in JSON format optimized for frontend rendering.
+    """
+    from app.services.quiz_summary_service import quiz_summary_service
+    
+    try:
+        logger.info(f"[QUIZ SUMMARY] Generating summary for quiz: {quiz_id}, profile: {profile_id}")
+        
+        # Get the quiz
+        quiz = await QuizzesDatabase.get_quiz_by_id(quiz_id)
+        
+        if not quiz:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Quiz not found"
+            )
+        
+        # Verify quiz belongs to profile
+        if str(quiz.profile_id) != profile_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied to this quiz"
+            )
+        
+        # Check if quiz is completed
+        if quiz.status != "completed":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Can only generate summary for completed quizzes"
+            )
+        
+        # Calculate quiz result from stored data
+        correct_count = 0
+        for question in quiz.questions:
+            q_dict = question.model_dump() if hasattr(question, 'model_dump') else question
+            if q_dict.get("user_answer") == q_dict.get("correct_answer"):
+                correct_count += 1
+        
+        quiz_result = {
+            "score": quiz.score or 0,
+            "correct_count": correct_count,
+            "total_questions": len(quiz.questions),
+            "xp_earned": quiz.xp_earned or 0
+        }
+        
+        # Generate summary with LLM
+        summary = await quiz_summary_service.generate_quiz_summary(
+            profile_id=profile_id,
+            quiz_id=quiz_id,
+            quiz_result=quiz_result
+        )
+        
+        if not summary:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to generate quiz summary"
+            )
+        
+        logger.info(f"[QUIZ SUMMARY] Successfully generated summary for quiz: {quiz_id}")
+        return summary
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"[QUIZ SUMMARY] Error generating summary: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to generate quiz summary: {str(e)}"
+        )
+
+
+@router.get("/insights/learning", response_model=dict, status_code=status.HTTP_200_OK)
+async def get_learning_insights(
+    days: int = 30,
+    profile_id: str = Depends(get_current_profile_id)
+):
+    """
+    Get comprehensive AI-powered learning insights for the student.
+    
+    This endpoint provides:
+    - Subject-wise performance analysis
+    - Weak topics with explanations
+    - Personalized study recommendations
+    - Weekly learning goals
+    - Motivational messages
+    
+    All insights are generated by the LLM in JSON format for easy
+    frontend rendering. Includes both English and Hindi translations.
+    
+    Args:
+        days: Number of days to analyze (default: 30)
+    """
+    from app.services.quiz_summary_service import quiz_summary_service
+    
+    try:
+        logger.info(f"[LEARNING INSIGHTS] Generating insights for profile: {profile_id}, days: {days}")
+        
+        # Generate comprehensive insights
+        insights = await quiz_summary_service.get_learning_insights(
+            profile_id=profile_id,
+            days=days
+        )
+        
+        if not insights:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to generate learning insights"
+            )
+        
+        logger.info(f"[LEARNING INSIGHTS] Successfully generated insights for profile: {profile_id}")
+        return insights
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"[LEARNING INSIGHTS] Error generating insights: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to generate learning insights: {str(e)}"
         )

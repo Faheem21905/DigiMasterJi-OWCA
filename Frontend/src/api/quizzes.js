@@ -116,4 +116,30 @@ export const quizzesApi = {
       params: { days },
     });
   },
+
+  // ============================================
+  // Quiz Summary & Learning Insights
+  // ============================================
+
+  /**
+   * Generate AI-powered summary for a completed quiz
+   * Returns personalized insights based on current and historical performance
+   * @param {string} quizId - The completed quiz ID
+   * @returns {Promise} Quiz summary with performance analysis, study tips, and concept explanations
+   */
+  generateQuizSummary: (quizId) => {
+    return apiClient.post(`/quizzes/${quizId}/summary`);
+  },
+
+  /**
+   * Get comprehensive AI-powered learning insights for the student
+   * This is for the dedicated Learning Insights page
+   * @param {number} days - Number of days to analyze (default: 30)
+   * @returns {Promise} Subject-wise insights, weak topics, recommendations, weekly goals
+   */
+  getLearningInsights: (days = 30) => {
+    return apiClient.get('/quizzes/insights/learning', {
+      params: { days },
+    });
+  },
 };

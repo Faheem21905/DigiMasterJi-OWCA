@@ -11,6 +11,7 @@ import {
   QuizTakePage,
   QuizRevisionPage,
   GamificationDashboard,
+  LearningInsightsPage,
   AdminDashboardPage,
   UploadDocumentPage,
   DocumentsListPage,
@@ -137,6 +138,14 @@ function App() {
           element={
             <PrivateRoute>
               <GamificationDashboard />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/insights"
+          element={
+            <PrivateRoute>
+              <LearningInsightsPage />
             </PrivateRoute>
           }
         />

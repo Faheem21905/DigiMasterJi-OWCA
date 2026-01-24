@@ -208,7 +208,8 @@ class QuizzesDatabase:
     @staticmethod
     async def get_completed_quizzes_by_profile(
         profile_id: str,
-        limit: Optional[int] = None
+        limit: Optional[int] = None,
+        days: Optional[int] = None
     ) -> List[QuizInDB]:
         """
         Get completed quizzes for a profile.
@@ -216,6 +217,7 @@ class QuizzesDatabase:
         Args:
             profile_id: Profile's ObjectId as string
             limit: Optional limit on number of quizzes
+            days: Optional number of days to look back
             
         Returns:
             List of completed QuizInDB
@@ -225,12 +227,17 @@ class QuizzesDatabase:
             
         collection = await QuizzesDatabase.get_collection()
         
-        cursor = collection.find(
-            {
-                "profile_id": ObjectId(profile_id),
-                "status": "completed"
-            }
-        ).sort("completed_at", -1)
+        query = {
+            "profile_id": ObjectId(profile_id),
+            "status": "completed"
+        }
+        
+        # Add date filter if days specified
+        if days is not None:
+            cutoff_date = datetime.utcnow() - timedelta(days=days)
+            query["completed_at"] = {"$gte": cutoff_date}
+        
+        cursor = collection.find(query).sort("completed_at", -1)
         
         if limit:
             cursor = cursor.limit(limit)

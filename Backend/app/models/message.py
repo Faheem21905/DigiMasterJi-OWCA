@@ -147,6 +147,8 @@ class MessageInDB(BaseModel):
     audio_format: Optional[str] = None
     audio_language: Optional[str] = None
     audio_language_name: Optional[str] = None
+    # Diagram data (stored for messages with visual explanations)
+    diagram: Optional[DiagramData] = None
     
     class Config:
         populate_by_name = True
@@ -190,6 +192,8 @@ class MessageResponse(BaseModel):
     audio_format: Optional[str] = None
     audio_language: Optional[str] = None
     audio_language_name: Optional[str] = None
+    # Diagram data (for messages with visual explanations)
+    diagram: Optional[DiagramData] = None
     
     class Config:
         populate_by_name = True

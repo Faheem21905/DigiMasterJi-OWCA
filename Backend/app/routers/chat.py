@@ -232,7 +232,9 @@ async def get_conversation_history(
             audio_base64=msg.audio_base64,
             audio_format=msg.audio_format,
             audio_language=msg.audio_language,
-            audio_language_name=msg.audio_language_name
+            audio_language_name=msg.audio_language_name,
+            # Include diagram data (will be None for user messages or messages without diagrams)
+            diagram=DiagramData(**msg.diagram) if msg.diagram else None
         )
         for msg in messages
     ]
@@ -551,10 +553,12 @@ async def send_message(
     diagram_data = None
     if message.include_diagram:
         try:
-            diagram_result = diagram_service.generate_diagram(
+            # Use async LLM-powered diagram generation
+            diagram_result = await diagram_service.generate_diagram_async(
                 query=message.content,
                 response=ai_result["response"],
-                low_bandwidth=message.low_bandwidth
+                low_bandwidth=message.low_bandwidth,
+                use_llm=True  # Enable LLM-powered diagram generation
             )
             if diagram_result:
                 diagram_data = DiagramData(
@@ -564,7 +568,14 @@ async def send_message(
                     title=diagram_result["title"],
                     size_bytes=diagram_result.get("size_bytes")
                 )
-                logger.info(f"[CHAT] Generated {diagram_result['type']} diagram: {diagram_result['diagram_type']}")
+                logger.info(f"[CHAT] Generated {diagram_result['type']} diagram: {diagram_result['diagram_type']} (LLM: {diagram_result.get('llm_generated', False)})")
+                
+                # Persist diagram to MongoDB
+                await MessagesDatabase.update_message_diagram(
+                    message_id=str(assistant_msg.id),
+                    diagram_data=diagram_result
+                )
+                logger.info(f"[CHAT] Persisted diagram to message {assistant_msg.id}")
         except Exception as e:
             logger.warning(f"[CHAT] Diagram generation failed (non-fatal): {e}")
     
@@ -650,10 +661,12 @@ async def _stream_response(
                 diagram_data = None
                 if message.include_diagram:
                     try:
-                        diagram_result = diagram_service.generate_diagram(
+                        # Use async LLM-powered diagram generation
+                        diagram_result = await diagram_service.generate_diagram_async(
                             query=message.content,
                             response=full_response.strip(),
-                            low_bandwidth=message.low_bandwidth
+                            low_bandwidth=message.low_bandwidth,
+                            use_llm=True  # Enable LLM-powered diagram generation
                         )
                         if diagram_result:
                             diagram_data = {
@@ -661,9 +674,17 @@ async def _stream_response(
                                 "diagram_type": diagram_result["diagram_type"],
                                 "content": diagram_result["content"],
                                 "title": diagram_result["title"],
-                                "size_bytes": diagram_result.get("size_bytes")
+                                "size_bytes": diagram_result.get("size_bytes"),
+                                "llm_generated": diagram_result.get("llm_generated", False)
                             }
-                            logger.info(f"[CHAT STREAM] Generated {diagram_result['type']} diagram: {diagram_result['diagram_type']}")
+                            logger.info(f"[CHAT STREAM] Generated {diagram_result['type']} diagram: {diagram_result['diagram_type']} (LLM: {diagram_result.get('llm_generated', False)})")
+                            
+                            # Persist diagram to MongoDB
+                            await MessagesDatabase.update_message_diagram(
+                                message_id=str(assistant_msg.id),
+                                diagram_data=diagram_result
+                            )
+                            logger.info(f"[CHAT STREAM] Persisted diagram to message {assistant_msg.id}")
                     except Exception as e:
                         logger.warning(f"[CHAT STREAM] Diagram generation failed (non-fatal): {e}")
                 
