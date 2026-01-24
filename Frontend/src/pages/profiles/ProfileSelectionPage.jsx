@@ -43,11 +43,16 @@ export default function ProfileSelectionPage() {
   const navigate = useNavigate();
   const { logout } = useAuth();
   const { profiles, loading, refreshProfiles, activateProfile } = useProfile();
-  
+
   const [selectedProfile, setSelectedProfile] = useState(null);
   const [isManaging, setIsManaging] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
   const [isActivating, setIsActivating] = useState(false); // Prevent double-activation
+
+  // Check if running locally
+  const isLocalhost = window.location.hostname === 'localhost' ||
+    window.location.hostname === '127.0.0.1' ||
+    window.location.hostname === '::1';
 
   useEffect(() => {
     refreshProfiles();
@@ -55,19 +60,19 @@ export default function ProfileSelectionPage() {
 
   const handleSelectProfile = async (profile) => {
     if (isManaging) return;
-    
+
     // Backend returns _id, handle both id and _id
     const profileId = profile._id || profile.id;
-    
+
     // Prevent double-clicking or re-activation
     if (selectedProfile || isActivating) return;
-    
+
     setSelectedProfile(profileId);
     setIsActivating(true);
-    
+
     try {
       await activateProfile(profileId);
-      
+
       // Navigate immediately - animation is handled by CSS transitions
       navigate('/chat');
     } catch (err) {
@@ -156,15 +161,18 @@ export default function ProfileSelectionPage() {
         >
           {/* Low Bandwidth Toggle - For rural users with poor connectivity */}
           <LowBandwidthToggle size="md" showTooltip={true} />
-          
-          <Button
-            variant="secondary"
-            size="sm"
-            icon={Shield}
-            onClick={() => navigate('/admin')}
-          >
-            Admin
-          </Button>
+
+          {/* Admin button - only show on localhost */}
+          {isLocalhost && (
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={Shield}
+              onClick={() => navigate('/admin')}
+            >
+              Admin
+            </Button>
+          )}
           <Button
             variant="secondary"
             size="sm"
@@ -239,7 +247,7 @@ export default function ProfileSelectionPage() {
                         shadow-lg
                       `}>
                         <span className="text-4xl">{avatar.emoji}</span>
-                        
+
                         {/* Selection indicator */}
                         {selectedProfile === profileId && (
                           <motion.div
