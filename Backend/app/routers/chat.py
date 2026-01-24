@@ -393,6 +393,7 @@ async def delete_conversation(
         "messages_deleted": messages_deleted
     }
 
+
 # =============================================================================
 # Chat Message Endpoint - RAG-Enhanced AI Response
 # =============================================================================
@@ -691,3 +692,294 @@ async def _stream_response(
             "X-Accel-Buffering": "no",  # Disable buffering in nginx
         }
     )
+
+
+async def _generate_tts_audio(
+    message: ChatMessageRequest,
+    profile,
+    response_text: str,
+    assistant_msg_id: str
+) -> tuple:
+    """Generate TTS audio for a response if requested."""
+    audio_base64 = None
+    audio_format = None
+    audio_language = None
+    audio_language_name = None
+    
+    if not message.include_audio:
+        return audio_base64, audio_format, audio_language, audio_language_name
+    
+    logger.info(f"[TTS] Generating audio for response (slow={message.slow_audio})")
+    
+    # Determine TTS language from profile's preferred language
+    tts_language = "en"
+    if profile and profile.preferred_language:
+        language_mapping = {
+            "Hindi": "hi",
+            "English": "en",
+            "Bengali": "bn",
+            "Tamil": "ta",
+            "Telugu": "te",
+            "Marathi": "mr",
+            "Gujarati": "gu",
+            "Kannada": "kn",
+            "Malayalam": "ml",
+            "Punjabi": "pa",
+            "Urdu": "ur",
+            "Nepali": "ne",
+        }
+        tts_language = language_mapping.get(profile.preferred_language, "en")
+    
+    if tts_language not in TTS_SUPPORTED_LANGUAGES:
+        logger.warning(f"[TTS] Language '{tts_language}' not supported, falling back to English")
+        tts_language = "en"
+    
+    logger.info(f"[TTS] Using language: {tts_language}")
+    
+    # Strip markdown formatting from text for clean TTS
+    tts_text = response_text
+    tts_text = re.sub(r'\*\*(.+?)\*\*', r'\1', tts_text)
+    tts_text = re.sub(r'__(.+?)__', r'\1', tts_text)
+    tts_text = re.sub(r'\*(.+?)\*', r'\1', tts_text)
+    tts_text = re.sub(r'_(.+?)_', r'\1', tts_text)
+    tts_text = re.sub(r'^\s*[\*\-\+]\s+', '', tts_text, flags=re.MULTILINE)
+    tts_text = re.sub(r'^\s*\d+\.\s+', '', tts_text, flags=re.MULTILINE)
+    tts_text = re.sub(r'^#+\s+', '', tts_text, flags=re.MULTILINE)
+    tts_text = re.sub(r'`([^`]+)`', r'\1', tts_text)
+    tts_text = re.sub(r'```[\s\S]*?```', '', tts_text)
+    tts_text = re.sub(r'^>\s*', '', tts_text, flags=re.MULTILINE)
+    tts_text = re.sub(r'\[([^\]]+)\]\([^)]+\)', r'\1', tts_text)
+    tts_text = re.sub(r'!\[([^\]]*)\]\([^)]+\)', r'\1', tts_text)
+    tts_text = re.sub(r'^[\-\*_]{3,}\s*$', '', tts_text, flags=re.MULTILINE)
+    tts_text = re.sub(r'\n{3,}', '\n\n', tts_text)
+    tts_text = tts_text.strip()
+    
+    logger.info(f"[TTS] Stripped markdown (original: {len(response_text)} chars, cleaned: {len(tts_text)} chars)")
+    
+    tts_result = tts_service.synthesize(
+        text=tts_text,
+        language=tts_language,
+        slow=message.slow_audio
+    )
+    
+    if tts_result.get("success"):
+        audio_base64 = tts_result.get("audio_base64")
+        audio_format = tts_result.get("format", "mp3")
+        audio_language = tts_result.get("language")
+        audio_language_name = tts_result.get("language_name")
+        logger.info(f"[TTS] Audio generated: {tts_result.get('audio_size', 0)} bytes")
+        
+        # Save TTS audio to database
+        await MessagesDatabase.update_message_tts_audio(
+            message_id=assistant_msg_id,
+            audio_base64=audio_base64,
+            audio_format=audio_format,
+            audio_language=audio_language,
+            audio_language_name=audio_language_name
+        )
+    else:
+        logger.error(f"[TTS] Failed to generate audio: {tts_result.get('error')}")
+    
+    return audio_base64, audio_format, audio_language, audio_language_name
+
+
+# =============================================================================
+# Audio Transcription Endpoint - Speech-to-Text (STT)
+# =============================================================================
+
+# Supported audio formats
+SUPPORTED_AUDIO_FORMATS = {
+    "audio/wav", "audio/wave", "audio/x-wav",
+    "audio/mpeg", "audio/mp3",
+    "audio/webm", "audio/ogg",
+    "audio/flac", "audio/x-flac",
+    "audio/m4a", "audio/mp4"
+}
+
+# Maximum file size (10 MB)
+MAX_AUDIO_SIZE = 10 * 1024 * 1024
+
+
+@router.post(
+    "/{conversation_id}/audio",
+    response_model=AudioTranscriptionResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Upload voice query for transcription",
+    description="""
+    Upload an audio file to be transcribed to text using Speech-to-Text (STT).
+    
+    This endpoint:
+    1. Receives an audio file (WAV, MP3, WebM, OGG, FLAC, M4A supported)
+    2. Saves the file temporarily
+    3. Transcribes the audio using configured STT provider (local Whisper or Deepgram)
+    4. Deletes the temporary file
+    5. Returns the transcribed text
+    
+    The transcribed text can then be sent to the /chat/{id}/message endpoint
+    to get an AI response.
+    
+    Supports multiple Indian languages including Hindi, English, Tamil, Telugu, etc.
+    Language handling is controlled by STT_LANGUAGE_MODE environment variable:
+    - 'profile': Uses profile's preferred_language (default)
+    - 'auto': Auto-detect language from audio
+    """
+)
+async def transcribe_audio(
+    conversation_id: str,
+    file: UploadFile = File(..., description="Audio file to transcribe"),
+    language: Optional[str] = Form(None, description="Language code (e.g., 'hi' for Hindi). If not provided, behavior depends on STT_LANGUAGE_MODE setting."),
+    profile_id: str = Depends(get_current_profile_id)
+):
+    """
+    Upload and transcribe an audio file to text.
+    
+    Args:
+        conversation_id: The conversation's unique ID (for context/logging)
+        file: The audio file to transcribe
+        language: Optional language code for transcription
+        profile_id: Profile ID from token
+        
+    Returns:
+        AudioTranscriptionResponse with the transcribed text
+        
+    Raises:
+        HTTPException: 404 if conversation not found
+        HTTPException: 403 if conversation doesn't belong to profile
+        HTTPException: 400 if file format is unsupported or file is too large
+        HTTPException: 500 if transcription fails
+    """
+    logger.info(f"[STT] Audio transcription request for conversation: {conversation_id}")
+    
+    # Determine transcription language based on STT_LANGUAGE_MODE setting
+    transcription_language = language
+    if not transcription_language and stt_service.should_use_profile_language():
+        # STT_LANGUAGE_MODE is 'profile' - use profile's preferred language
+        profile = await ProfilesDatabase.get_profile_by_id(profile_id)
+        if profile and profile.preferred_language:
+            transcription_language = profile.preferred_language
+            logger.info(f"[STT] Using profile's preferred language: {transcription_language}")
+    # If STT_LANGUAGE_MODE is 'auto', transcription_language stays None for auto-detect
+    
+    
+    # Verify conversation exists
+    conversation = await ConversationsDatabase.get_conversation_by_id(conversation_id)
+    
+    if not conversation:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Conversation not found"
+        )
+    
+    # Verify conversation belongs to current profile
+    if str(conversation.profile_id) != profile_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied to this conversation"
+        )
+    
+    # Validate file type
+    content_type = file.content_type or ""
+    if content_type not in SUPPORTED_AUDIO_FORMATS:
+        # Also check by file extension as fallback
+        filename = file.filename or ""
+        valid_extensions = (".wav", ".mp3", ".webm", ".ogg", ".flac", ".m4a", ".mp4")
+        if not filename.lower().endswith(valid_extensions):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Unsupported audio format: {content_type}. Supported formats: WAV, MP3, WebM, OGG, FLAC, M4A"
+            )
+    
+    # Read file content
+    try:
+        audio_bytes = await file.read()
+    except Exception as e:
+        logger.error(f"[STT] Error reading audio file: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Error reading audio file: {str(e)}"
+        )
+    
+    # Validate file size
+    if len(audio_bytes) > MAX_AUDIO_SIZE:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Audio file too large. Maximum size is {MAX_AUDIO_SIZE // (1024*1024)} MB"
+        )
+    
+    if len(audio_bytes) == 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Empty audio file uploaded"
+        )
+    
+    logger.info(f"[STT] Received audio file: {file.filename}, size: {len(audio_bytes)} bytes, type: {content_type}")
+    
+    # Save to temporary file
+    temp_path = None
+    try:
+        # Determine file extension
+        filename = file.filename or "audio.wav"
+        ext = os.path.splitext(filename)[1] or ".wav"
+        
+        # Create temp file
+        with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as temp_file:
+            temp_path = temp_file.name
+            temp_file.write(audio_bytes)
+        
+        logger.info(f"[STT] Saved audio to temp file: {temp_path}")
+        
+        # Transcribe using STT service (async for better performance with Deepgram)
+        provider_info = f"provider={stt_service.provider}"
+        logger.info(f"[STT] Starting transcription ({provider_info}, language={transcription_language or 'auto-detect'})...")
+        
+        result = await stt_service.transcribe_file_async(
+            file_path=temp_path,
+            language=transcription_language,
+            task="transcribe"
+        )
+        
+        if not result.get("success"):
+            error_msg = result.get("error", "Unknown transcription error")
+            logger.error(f"[STT] Transcription failed: {error_msg}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Transcription failed: {error_msg}"
+            )
+        
+        transcribed_text = result.get("text", "").strip()
+        detected_language = result.get("language", transcription_language)
+        stt_provider = result.get("provider", stt_service.provider)
+        
+        logger.info(f"[STT] Transcription successful via {stt_provider}: '{transcribed_text[:50]}...' (language: {detected_language})")
+        
+        # Map language code to name
+        from app.services.stt_service import SUPPORTED_LANGUAGES
+        language_name = SUPPORTED_LANGUAGES.get(detected_language, detected_language)
+        
+        return AudioTranscriptionResponse(
+            success=True,
+            transcribed_text=transcribed_text,
+            language=detected_language,
+            language_name=language_name,
+            duration_seconds=None  # Could be calculated if needed
+        )
+        
+    except HTTPException:
+        # Re-raise HTTP exceptions
+        raise
+    except Exception as e:
+        logger.error(f"[STT] Unexpected error during transcription: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Transcription error: {str(e)}"
+        )
+    finally:
+        # Always clean up temp file
+        if temp_path and os.path.exists(temp_path):
+            try:
+                os.unlink(temp_path)
+                logger.info(f"[STT] Cleaned up temp file: {temp_path}")
+            except Exception as e:
+                logger.warning(f"[STT] Failed to delete temp file {temp_path}: {e}")
