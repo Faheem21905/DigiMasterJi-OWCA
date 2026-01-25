@@ -91,8 +91,13 @@ class QuizSummaryService:
                 logger.error(f"[AUTO INSIGHTS] Failed to generate insights for profile: {profile_id}")
                 return False
             
-            # Transform insights to storage format
-            storage_data = self._transform_insights_for_storage(insights)
+            # Store insights directly - keep the LLM format that frontend expects
+            # Only add metadata fields, don't transform the structure
+            storage_data = {
+                **insights,
+                "generated_at": datetime.utcnow().isoformat(),
+                "analysis_period_days": 30
+            }
             
             # Store insights in profile
             result = await ProfilesDatabase.update_learning_insights(
@@ -902,40 +907,77 @@ Important:
     def _get_fallback_insights(self, history_analysis: Dict[str, Any]) -> Dict[str, Any]:
         """Generate fallback insights when LLM fails."""
         avg = history_analysis.get("overall_average", 0)
+        total_quizzes = history_analysis.get("total_quizzes", 0)
+        trend = history_analysis.get("recent_trend", "neutral")
         
         if avg >= 80:
             level = "excellent"
             summary = "You're doing great! Keep up the excellent work."
+            summary_hindi = "आप बहुत अच्छा कर रहे हैं! इसी तरह मेहनत करते रहें।"
         elif avg >= 60:
             level = "good"
             summary = "You're making good progress. Focus on your weaker subjects."
+            summary_hindi = "आप अच्छी प्रगति कर रहे हैं। अपने कमज़ोर विषयों पर ध्यान दें।"
         elif avg >= 40:
             level = "average"
             summary = "Keep practicing! There's room for improvement in several areas."
+            summary_hindi = "अभ्यास जारी रखें! कई क्षेत्रों में सुधार की गुंजाइश है।"
         else:
             level = "needs_improvement"
             summary = "Let's work together to improve your understanding. Practice makes perfect!"
+            summary_hindi = "आइए मिलकर आपकी समझ को बेहतर बनाएं। अभ्यास से निपुणता आती है!"
+        
+        # Build subject insights from history if available
+        subject_insights = []
+        for subject, stats in history_analysis.get("subject_stats", {}).items():
+            avg_score = stats.get("average_score", 0)
+            status = "strong" if avg_score >= 70 else ("average" if avg_score >= 50 else "weak")
+            subject_insights.append({
+                "subject": subject,
+                "status": status,
+                "score_average": round(avg_score, 1),
+                "performance_trend": trend,
+                "improvement_areas": stats.get("topics", [])[:3] if avg_score < 70 else [],
+                "strong_areas": stats.get("topics", [])[:3] if avg_score >= 70 else [],
+                "recommendation": f"Continue practicing {subject} topics.",
+                "recommendation_hindi": f"{subject} के विषयों का अभ्यास जारी रखें।"
+            })
         
         return {
             "has_data": True,
+            "profile_name": None,  # Will be set by caller
+            "grade_level": None,   # Will be set by caller
+            "total_quizzes": total_quizzes,
+            "overall_average": avg,
+            "performance_trend": trend,
             "overall_assessment": {
                 "level": level,
                 "summary": summary,
-                "summary_hindi": "अपनी पढ़ाई जारी रखें!"
+                "summary_hindi": summary_hindi
             },
-            "subject_insights": [],
-            "weak_topics_explanation": [],
-            "strengths": [],
+            "subject_insights": subject_insights,
+            "weak_topics_explanation": [],  # Empty in fallback - requires LLM
+            "strengths": [
+                {
+                    "area": "Dedication",
+                    "praise": "You're taking quizzes regularly. Keep it up!",
+                    "praise_hindi": "आप नियमित रूप से क्विज़ दे रहे हैं। बहुत अच्छा!"
+                }
+            ] if total_quizzes > 0 else [],
             "weekly_goals": [
-                {"goal": "Complete one quiz every day", "goal_hindi": "हर दिन एक क्विज़ पूरा करें", "subject": "General"}
+                {"goal": "Complete one quiz every day", "goal_hindi": "हर दिन एक क्विज़ पूरा करें", "subject": "General"},
+                {"goal": "Review wrong answers from past quizzes", "goal_hindi": "पिछले क्विज़ के गलत उत्तरों की समीक्षा करें", "subject": "General"}
+            ],
+            "personalized_recommendations": [
+                "Practice regularly with daily quizzes",
+                "Review the topics where you made mistakes",
+                "Don't hesitate to ask questions when you don't understand"
             ],
             "motivational_message": "Every day is a new chance to learn something new!",
             "motivational_message_hindi": "हर दिन कुछ नया सीखने का मौका है!",
-            "total_quizzes": history_analysis.get("total_quizzes", 0),
-            "overall_average": avg,
-            "performance_trend": history_analysis.get("recent_trend", "neutral"),
             "generated_at": datetime.utcnow().isoformat(),
-            "analysis_period_days": 30
+            "analysis_period_days": 30,
+            "rag_enhanced": False
         }
 
 

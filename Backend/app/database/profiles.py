@@ -485,6 +485,8 @@ class ProfilesDatabase:
         Args:
             profile_id: Profile's ObjectId as string
             insights_data: Learning insights dictionary from quiz_summary_service
+                          This is stored directly to preserve the LLM output format
+                          that the frontend expects.
             
         Returns:
             Updated ProfileInDB or None
@@ -494,18 +496,13 @@ class ProfilesDatabase:
             
         collection = await ProfilesDatabase.get_collection()
         
-        # Build the insights document for storage
+        # Store the insights data directly - preserve the full structure
+        # The frontend expects fields like: overall_assessment, subject_insights,
+        # weak_topics_explanation, strengths, weekly_goals, etc.
+        # Add/update the generated_at timestamp
         insights_doc = {
-            "generated_at": datetime.utcnow(),
-            "overall_score": insights_data.get("overall_score", 0.0),
-            "total_quizzes_analyzed": insights_data.get("total_quizzes_analyzed", 0),
-            "subjects": insights_data.get("subjects", []),
-            "weak_areas_summary": insights_data.get("weak_areas_summary", ""),
-            "strengths_summary": insights_data.get("strengths_summary", ""),
-            "personalized_recommendations": insights_data.get("personalized_recommendations", []),
-            "weekly_goals": insights_data.get("weekly_goals", []),
-            "motivational_message": insights_data.get("motivational_message", ""),
-            "motivational_message_hindi": insights_data.get("motivational_message_hindi", "")
+            **insights_data,
+            "generated_at": datetime.utcnow()
         }
         
         result = await collection.find_one_and_update(

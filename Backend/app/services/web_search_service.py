@@ -2,27 +2,22 @@
 Web Search Service - Dynamic Web Search Integration
 ====================================================
 Provides web search capabilities for when the LLM needs external information.
-Uses DuckDuckGo Instant Answer API (free, no API key required).
+Uses duckduckgo-search library for comprehensive web search results.
 
 DigiMasterJi - Multilingual AI Tutor for Rural Education
 """
 
-import httpx
 import logging
 import asyncio
 from typing import List, Dict, Any, Optional
-from urllib.parse import quote_plus
 import re
 
 logger = logging.getLogger(__name__)
 
-# DuckDuckGo API endpoint
-DUCKDUCKGO_API_URL = "https://api.duckduckgo.com/"
-
 # Keywords that indicate web search might be helpful
 WEB_SEARCH_TRIGGER_KEYWORDS = [
     # Current events
-    "latest", "recent", "current", "today", "news", "2024", "2025",
+    "latest", "recent", "current", "today", "news", "2024", "2025", "2026",
     # Specific information
     "who is", "what is the", "how many", "when did", "where is",
     # Facts and data
@@ -33,13 +28,15 @@ WEB_SEARCH_TRIGGER_KEYWORDS = [
     "சமீபத்திய", "தற்போதைய", "யார்", "என்ன", "எப்போது", "எங்கே",
     # Educational research
     "research", "study", "discovery", "invented", "founded",
+    # Web search explicit
+    "search", "web search", "google", "look up", "find online",
 ]
 
 
 class WebSearchService:
     """Service for performing web searches to augment LLM responses."""
     
-    def __init__(self, timeout: float = 10.0):
+    def __init__(self, timeout: float = 15.0):
         """
         Initialize the web search service.
         
@@ -47,7 +44,18 @@ class WebSearchService:
             timeout: Request timeout in seconds
         """
         self.timeout = timeout
-        self.client = httpx.AsyncClient(timeout=timeout)
+        self._ddgs = None
+    
+    def _get_ddgs(self):
+        """Lazy load the DDGS instance."""
+        if self._ddgs is None:
+            try:
+                from duckduckgo_search import DDGS
+                self._ddgs = DDGS()
+            except ImportError:
+                logger.error("[WEB SEARCH] duckduckgo-search library not installed. Run: pip install duckduckgo-search")
+                return None
+        return self._ddgs
     
     async def search(
         self,
@@ -56,7 +64,7 @@ class WebSearchService:
         safe_search: bool = True
     ) -> Dict[str, Any]:
         """
-        Perform a web search using DuckDuckGo Instant Answer API.
+        Perform a web search using DuckDuckGo text search.
         
         Args:
             query: Search query
@@ -67,43 +75,104 @@ class WebSearchService:
             Dictionary with search results and metadata
         """
         try:
-            logger.info(f"[WEB SEARCH] Searching for: '{query[:50]}...'")
+            logger.info(f"[WEB SEARCH] Searching for: '{query[:80]}...'")
             
-            # Clean and encode query
+            # Clean the query
             clean_query = self._clean_query(query)
+            if not clean_query:
+                return self._error_response("Empty search query")
             
-            # DuckDuckGo Instant Answer API parameters
-            params = {
-                "q": clean_query,
-                "format": "json",
-                "no_html": "1",
-                "skip_disambig": "1",
-                "kp": "1" if safe_search else "-1",  # Safe search
-            }
-            
-            response = await self.client.get(DUCKDUCKGO_API_URL, params=params)
-            response.raise_for_status()
-            
-            data = response.json()
-            
-            # Parse DuckDuckGo response
-            results = self._parse_ddg_response(data, max_results)
-            
-            logger.info(f"[WEB SEARCH] Found {len(results['results'])} results")
+            # Run the search in a thread pool to avoid blocking
+            loop = asyncio.get_event_loop()
+            results = await loop.run_in_executor(
+                None,
+                self._perform_search,
+                clean_query,
+                max_results,
+                safe_search
+            )
             
             return results
             
-        except httpx.TimeoutException:
+        except asyncio.TimeoutError:
             logger.warning("[WEB SEARCH] Request timed out")
             return self._error_response("Search timed out. Please try again.")
             
-        except httpx.HTTPError as e:
-            logger.error(f"[WEB SEARCH] HTTP error: {e}")
-            return self._error_response(f"Search failed: {str(e)}")
-            
         except Exception as e:
             logger.error(f"[WEB SEARCH] Error: {e}")
+            import traceback
+            traceback.print_exc()
             return self._error_response(f"Search error: {str(e)}")
+    
+    def _perform_search(
+        self,
+        query: str,
+        max_results: int,
+        safe_search: bool
+    ) -> Dict[str, Any]:
+        """
+        Perform the actual search (called in executor).
+        
+        Args:
+            query: Cleaned search query
+            max_results: Maximum results to return
+            safe_search: Safe search mode
+            
+        Returns:
+            Dictionary with search results
+        """
+        try:
+            ddgs = self._get_ddgs()
+            if ddgs is None:
+                return self._error_response("DuckDuckGo search library not available")
+            
+            # Perform text search
+            # safesearch: "strict", "moderate", "off"
+            safesearch_level = "strict" if safe_search else "off"
+            
+            search_results = ddgs.text(
+                keywords=query,
+                max_results=max_results,
+                safesearch=safesearch_level
+            )
+            
+            # Convert to list (it may return a generator)
+            results_list = list(search_results) if search_results else []
+            
+            # Parse and format results
+            formatted_results = []
+            for result in results_list:
+                formatted_results.append({
+                    "title": result.get("title", ""),
+                    "snippet": result.get("body", ""),
+                    "url": result.get("href", "") or result.get("link", ""),
+                    "source": self._extract_domain(result.get("href", "") or result.get("link", "")),
+                    "type": "web_result"
+                })
+            
+            logger.info(f"[WEB SEARCH] Found {len(formatted_results)} results")
+            
+            return {
+                "success": True,
+                "query": query,
+                "results": formatted_results,
+                "has_results": len(formatted_results) > 0
+            }
+            
+        except Exception as e:
+            logger.error(f"[WEB SEARCH] Search execution error: {e}")
+            return self._error_response(f"Search failed: {str(e)}")
+    
+    def _extract_domain(self, url: str) -> str:
+        """Extract domain name from URL."""
+        if not url:
+            return ""
+        try:
+            from urllib.parse import urlparse
+            parsed = urlparse(url)
+            return parsed.netloc.replace("www.", "")
+        except:
+            return ""
     
     async def search_educational(
         self,
@@ -186,84 +255,6 @@ class WebSearchService:
         
         return query.strip()
     
-    def _parse_ddg_response(self, data: Dict[str, Any], max_results: int) -> Dict[str, Any]:
-        """Parse DuckDuckGo API response into structured results."""
-        results = []
-        
-        # Abstract (main answer)
-        if data.get("Abstract"):
-            results.append({
-                "title": data.get("Heading", ""),
-                "snippet": data.get("Abstract", ""),
-                "source": data.get("AbstractSource", ""),
-                "url": data.get("AbstractURL", ""),
-                "type": "abstract"
-            })
-        
-        # Related topics
-        for topic in data.get("RelatedTopics", [])[:max_results]:
-            if isinstance(topic, dict):
-                if topic.get("Text"):
-                    results.append({
-                        "title": topic.get("Text", "")[:100],
-                        "snippet": topic.get("Text", ""),
-                        "url": topic.get("FirstURL", ""),
-                        "type": "related"
-                    })
-                # Handle nested topics
-                elif topic.get("Topics"):
-                    for subtopic in topic.get("Topics", [])[:2]:
-                        if subtopic.get("Text"):
-                            results.append({
-                                "title": subtopic.get("Text", "")[:100],
-                                "snippet": subtopic.get("Text", ""),
-                                "url": subtopic.get("FirstURL", ""),
-                                "type": "related"
-                            })
-        
-        # Infobox
-        if data.get("Infobox"):
-            infobox = data["Infobox"]
-            if infobox.get("content"):
-                info_text = []
-                for item in infobox.get("content", [])[:5]:
-                    if item.get("label") and item.get("value"):
-                        info_text.append(f"{item['label']}: {item['value']}")
-                
-                if info_text:
-                    results.append({
-                        "title": "Quick Facts",
-                        "snippet": "\n".join(info_text),
-                        "type": "infobox"
-                    })
-        
-        # Definition
-        if data.get("Definition"):
-            results.append({
-                "title": "Definition",
-                "snippet": data.get("Definition", ""),
-                "source": data.get("DefinitionSource", ""),
-                "url": data.get("DefinitionURL", ""),
-                "type": "definition"
-            })
-        
-        # Answer (for calculations, etc.)
-        if data.get("Answer"):
-            results.append({
-                "title": "Answer",
-                "snippet": data.get("Answer", ""),
-                "type": "answer"
-            })
-        
-        return {
-            "success": True,
-            "query": data.get("Heading", ""),
-            "results": results[:max_results],
-            "has_results": len(results) > 0,
-            "image_url": data.get("Image", ""),
-            "entity_type": data.get("Entity", "")
-        }
-    
     def _error_response(self, message: str) -> Dict[str, Any]:
         """Create an error response."""
         return {
@@ -293,6 +284,7 @@ class WebSearchService:
             title = result.get("title", "")
             snippet = result.get("snippet", "")
             source = result.get("source", "")
+            url = result.get("url", "")
             
             if snippet:
                 context_parts.append(f"\n[Result {i}: {title}]")
@@ -305,8 +297,9 @@ class WebSearchService:
         return "\n".join(context_parts)
     
     async def close(self):
-        """Close the HTTP client."""
-        await self.client.aclose()
+        """Close any resources."""
+        # DDGS doesn't need explicit cleanup, but we keep this for interface compatibility
+        self._ddgs = None
 
 
 # Global instance
