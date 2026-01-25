@@ -13,6 +13,7 @@ import {
   Target,
   Award,
   Users,
+  Brain,
 } from 'lucide-react';
 import { Button, Card, NetworkStatusBadge, LowBandwidthToggle } from '../../components/ui';
 import { StreakWidget, XPProgressWidget } from '../../components/gamification';
@@ -177,6 +178,34 @@ export default function GamificationDashboard() {
             <div className="text-left">
               <div className="font-medium text-white">Daily Quiz</div>
               <div className="text-xs text-white/50">Test your knowledge</div>
+            </div>
+            <ChevronRight className="w-5 h-5 text-white/40 ml-auto" />
+          </button>
+
+          <button
+            onClick={() => navigate('/insights')}
+            className="p-4 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-500/10 border border-cyan-500/20 hover:border-cyan-400/40 transition-all flex items-center gap-3"
+          >
+            <div className="w-10 h-10 rounded-xl bg-cyan-500 flex items-center justify-center">
+              <Brain className="w-5 h-5 text-white" />
+            </div>
+            <div className="text-left">
+              <div className="font-medium text-white">Insights</div>
+              <div className="text-xs text-white/50">AI-powered analytics</div>
+            </div>
+            <ChevronRight className="w-5 h-5 text-white/40 ml-auto" />
+          </button>
+
+          <button
+            onClick={() => navigate('/quiz/revision')}
+            className="p-4 rounded-2xl bg-gradient-to-br from-amber-500/20 to-orange-500/10 border border-amber-500/20 hover:border-amber-400/40 transition-all flex items-center gap-3"
+          >
+            <div className="w-10 h-10 rounded-xl bg-amber-500 flex items-center justify-center">
+              <Award className="w-5 h-5 text-white" />
+            </div>
+            <div className="text-left">
+              <div className="font-medium text-white">Revision</div>
+              <div className="text-xs text-white/50">Review past quizzes</div>
             </div>
             <ChevronRight className="w-5 h-5 text-white/40 ml-auto" />
           </button>

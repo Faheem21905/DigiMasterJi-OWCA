@@ -116,4 +116,49 @@ export const quizzesApi = {
       params: { days },
     });
   },
+
+  // ============================================
+  // Quiz Summary & Learning Insights
+  // ============================================
+
+  /**
+   * Generate AI-powered summary for a completed quiz
+   * Returns personalized insights based on current and historical performance
+   * @param {string} quizId - The completed quiz ID
+   * @returns {Promise} Quiz summary with performance analysis, study tips, and concept explanations
+   */
+  generateQuizSummary: (quizId) => {
+    return apiClient.post(`/quizzes/${quizId}/summary`);
+  },
+
+  /**
+   * Get comprehensive AI-powered learning insights for the student
+   * This generates insights on-demand (may take longer)
+   * @param {number} days - Number of days to analyze (default: 30)
+   * @returns {Promise} Subject-wise insights, weak topics, recommendations, weekly goals
+   */
+  getLearningInsights: (days = 30) => {
+    return apiClient.get('/quizzes/insights/learning', {
+      params: { days },
+    });
+  },
+
+  /**
+   * Get stored/cached learning insights from user profile
+   * These are auto-generated after each quiz completion
+   * Falls back to generating if no stored insights exist
+   * @returns {Promise} Stored insights with generated_at timestamp
+   */
+  getStoredInsights: () => {
+    return apiClient.get('/quizzes/insights/stored');
+  },
+
+  /**
+   * Manually trigger a refresh of the learning insights
+   * Use when user wants updated analysis
+   * @returns {Promise} Newly generated insights
+   */
+  refreshInsights: () => {
+    return apiClient.post('/quizzes/insights/refresh');
+  },
 };

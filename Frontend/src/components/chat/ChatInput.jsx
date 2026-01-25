@@ -1,18 +1,20 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Send, Mic, Paperclip, Smile, Loader2 } from 'lucide-react';
+import { Send, Mic, Paperclip, Smile, Loader2, Globe } from 'lucide-react';
 
 /**
  * ChatInput Component
- * Text input area with send button and optional voice/attachment buttons
+ * Text input area with send button and optional voice/attachment/web search buttons
  */
-export default function ChatInput({ 
+export default function ChatInput({
   onSendMessage,
   onStartRecording,
   disabled = false,
   placeholder = "Type your message...",
   showVoiceButton = true,
   showAttachButton = false,
+  enableWebSearch = false,
+  onWebSearchToggle,
 }) {
   const [message, setMessage] = useState('');
   const [isFocused, setIsFocused] = useState(false);
@@ -46,7 +48,41 @@ export default function ChatInput({
         ${isFocused ? 'opacity-50' : ''}
       `} />
 
-      <form 
+      {/* Feature Toggle Buttons Row */}
+      <div className="flex items-center gap-2 mb-2 px-2">
+        {/* Web Search Toggle */}
+        {onWebSearchToggle && (
+          <motion.button
+            type="button"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={onWebSearchToggle}
+            className={`
+              flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium
+              transition-all duration-200
+              ${enableWebSearch
+                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                : 'bg-white/5 text-white/50 border border-white/10 hover:bg-white/10 hover:text-white/70'
+              }
+            `}
+            title={enableWebSearch ? "Web search enabled" : "Enable web search"}
+          >
+            {enableWebSearch ? (
+              <>
+                <Globe className="w-3.5 h-3.5" />
+                <span>Web Search</span>
+              </>
+            ) : (
+              <>
+                <Globe className="w-3.5 h-3.5" />
+                <span>Web Search</span>
+              </>
+            )}
+          </motion.button>
+        )}
+      </div>
+
+      <form
         onSubmit={handleSubmit}
         className={`
           relative flex items-end gap-2 p-3

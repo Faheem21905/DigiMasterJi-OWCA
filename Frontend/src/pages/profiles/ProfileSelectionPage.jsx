@@ -173,10 +173,21 @@ export default function ProfileSelectionPage() {
               Admin
             </Button>
           )}
+
+          {/* Settings - Offline Model Management */}
           <Button
             variant="secondary"
             size="sm"
-            icon={isManaging ? Edit2 : Settings}
+            icon={Settings}
+            onClick={() => navigate('/settings')}
+          >
+            Settings
+          </Button>
+
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={Edit2}
             onClick={() => setIsManaging(!isManaging)}
           >
             {isManaging ? 'Done' : 'Manage'}

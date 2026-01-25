@@ -1,22 +1,26 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Menu, 
-  X, 
-  ArrowLeft, 
+import {
+  Menu,
+  X,
+  ArrowLeft,
   Sparkles,
   User,
   AlertCircle,
   RefreshCw,
   Trophy,
   BookOpen,
+  Wifi,
+  WifiOff,
+  Download,
 } from 'lucide-react';
 import { ChatSidebar, ChatWindow } from '../../components/chat';
 import { NetworkStatusBadge, OfflineBanner, LowBandwidthToggle, useLowBandwidthMode } from '../../components/ui';
 import { useProfile } from '../../hooks/useProfile';
 import { useChatService } from '../../hooks/useChatService';
 import { useNetworkStatus } from '../../contexts/NetworkStatusContext';
+import { useWebLLM } from '../../contexts/WebLLMContext';
 
 /**
  * ChatPage Component
@@ -28,10 +32,14 @@ export default function ChatPage() {
   const navigate = useNavigate();
   const { activeProfile, isProfileSessionValid, deactivateProfile } = useProfile();
   const { isOnline, isSyncing } = useNetworkStatus();
-  
-  // Low bandwidth mode for diagram generation (ASCII instead of SVG)
+
+  // WebLLM for true offline mode (runs in browser when no internet at all)
+  const webLLMContext = useWebLLM();
+  const { isModelReady: isWebLLMReady, useOfflineChat: useTrueOfflineChat, isLoading: isWebLLMLoading } = webLLMContext;
+
+  // Low bandwidth mode for data saving
   const { isLowBandwidth } = useLowBandwidthMode();
-  
+
   // Chat service hook - manages all chat state and API calls
   const {
     conversations,
@@ -42,11 +50,17 @@ export default function ChatPage() {
     isLoadingMessages,
     isSendingMessage,
     isTyping,
+    isOffline,
+    isOfflineModelAvailable,
+    isUsingOfflineModel,
+    offlineModelName,
     fetchConversations,
     createConversation,
     selectConversation,
     sendMessage,
     sendMessageStream,
+    sendMessageOffline,
+    sendMessageTrueOffline,
     sendVoiceMessage,
     deleteConversation,
     clearActiveConversation,
@@ -59,7 +73,7 @@ export default function ChatPage() {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [sessionChecked, setSessionChecked] = useState(false);
   const [enableTTS, setEnableTTS] = useState(true); // TTS preference
-  
+
   // Ref to track if we've initiated a fetch for this mount
   const fetchInitiatedRef = useRef(false);
 
@@ -82,20 +96,20 @@ export default function ChatPage() {
     if (fetchInitiatedRef.current) {
       return;
     }
-    
+
     // Wait for session check and profile to be ready
     if (!sessionChecked || !activeProfile) {
       return;
     }
-    
+
     const currentProfileId = activeProfile._id || activeProfile.id;
-    
+
     // Mark that we've initiated a fetch - do this IMMEDIATELY
     fetchInitiatedRef.current = true;
-    
+
     // Fetch conversations
     fetchConversations(currentProfileId);
-    
+
   }, [sessionChecked, activeProfile, fetchConversations]);
 
   // Handle selecting a conversation
@@ -119,20 +133,37 @@ export default function ChatPage() {
   };
 
   // Handle sending a message (with streaming)
+  // Priority: 1. True offline (WebLLM) when no internet, 2. Backend offline, 3. Online streaming
   const handleSendMessage = async (content, options = {}) => {
     if (!content?.trim()) return;
     try {
       // Pass profileId for creating new conversations
       const profileId = activeProfile?._id || activeProfile?.id;
-      // Include TTS preference in the message
-      const includeAudio = options.includeAudio !== undefined ? options.includeAudio : enableTTS;
-      // Use streaming by default for real-time token display
-      // Pass lowBandwidth flag for ASCII diagrams instead of SVG when data saver is on
-      await sendMessageStream(content, profileId, { 
-        includeAudio,
-        lowBandwidth: isLowBandwidth,
-        includeDiagram: true, // Always request diagrams when appropriate
-      });
+
+      // TRUE OFFLINE MODE: Use WebLLM when device has no internet at all
+      // This runs the model entirely in the browser
+      if (!isOnline && useTrueOfflineChat && isWebLLMReady) {
+        console.log('[Chat] Using TRUE offline mode (WebLLM - browser-based)');
+        await sendMessageTrueOffline(content, webLLMContext);
+        return;
+      }
+
+      // BACKEND OFFLINE MODE: Use backend's local Ollama when available
+      const useBackendOfflineMode = (!isOnline && isOfflineModelAvailable) || options.forceOffline;
+
+      if (useBackendOfflineMode) {
+        console.log('[Chat] Using backend offline model');
+        await sendMessageOffline(content, profileId);
+      } else {
+        // ONLINE MODE: Normal streaming with full features
+        const includeAudio = options.includeAudio !== undefined ? options.includeAudio : enableTTS;
+        const enableWebSearch = options.enableWebSearch || false;
+        await sendMessageStream(content, profileId, {
+          includeAudio,
+          lowBandwidth: isLowBandwidth,
+          enableWebSearch: enableWebSearch,
+        });
+      }
     } catch (err) {
       console.error('Error sending message:', err);
     }
@@ -145,12 +176,14 @@ export default function ChatPage() {
       const profileId = activeProfile?._id || activeProfile?.id;
       // Include TTS preference in the voice message
       const includeAudio = options.includeAudio !== undefined ? options.includeAudio : enableTTS;
+      // Get web search option from the input
+      const enableWebSearch = options.enableWebSearch || false;
       await sendVoiceMessage(audioBlob, profileId, {
         autoSend: true,
         includeAudio,
         slowAudio: false,
         lowBandwidth: isLowBandwidth,
-        includeDiagram: true,
+        enableWebSearch: enableWebSearch,
       });
     } catch (err) {
       console.error('Error sending voice message:', err);
@@ -205,7 +238,7 @@ export default function ChatPage() {
       <div className="absolute top-0 left-0 right-0 z-30 lg:hidden">
         {/* Offline Banner - Shows when offline or syncing */}
         <OfflineBanner />
-        
+
         <div className="flex items-center justify-between p-4 bg-slate-950/80 backdrop-blur-sm border-b border-white/10">
           <button
             onClick={() => setIsMobileSidebarOpen(true)}
@@ -217,6 +250,17 @@ export default function ChatPage() {
           <div className="flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-violet-400" />
             <span className="font-semibold text-white">DigiMasterJi</span>
+            {/* Offline Model Indicator - Mobile */}
+            {isUsingOfflineModel && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/30"
+              >
+                <WifiOff className="w-3 h-3 text-amber-400" />
+                <span className="text-xs font-medium text-amber-400">Offline</span>
+              </motion.div>
+            )}
             {/* Network Status Badge - Mobile */}
             <NetworkStatusBadge variant="minimal" size="sm" />
           </div>
@@ -230,7 +274,7 @@ export default function ChatPage() {
             >
               <BookOpen className="w-5 h-5" />
             </button>
-            
+
             {/* Progress Button - Mobile */}
             <button
               onClick={() => navigate('/progress')}
@@ -239,10 +283,10 @@ export default function ChatPage() {
             >
               <Trophy className="w-5 h-5" />
             </button>
-            
+
             {/* Low Bandwidth Toggle - Mobile */}
             <LowBandwidthToggle size="sm" showTooltip={false} />
-            
+
             <button
               onClick={handleBackToProfiles}
               className="p-2 rounded-xl bg-white/10 text-white"
@@ -354,6 +398,51 @@ export default function ChatPage() {
             </div>
             {/* Network Status Badge - Desktop */}
             <NetworkStatusBadge variant="pill" size="sm" />
+            {/* TRUE Offline Mode Active (WebLLM) */}
+            {useTrueOfflineChat && isWebLLMReady && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-orange-500/20 border border-orange-500/30"
+              >
+                <WifiOff className="w-4 h-4 text-orange-400" />
+                <span className="text-sm font-medium text-orange-400">Browser AI</span>
+              </motion.div>
+            )}
+            {/* Backend Offline Model Indicator */}
+            {isUsingOfflineModel && !useTrueOfflineChat && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/20 border border-amber-500/30"
+              >
+                <WifiOff className="w-4 h-4 text-amber-400" />
+                <span className="text-sm font-medium text-amber-400">Offline Model</span>
+              </motion.div>
+            )}
+            {/* WebLLM Ready Indicator (when online) */}
+            {isOnline && isWebLLMReady && !useTrueOfflineChat && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/20 border border-emerald-500/30"
+                title="Offline mode ready - works even without internet"
+              >
+                <Wifi className="w-4 h-4 text-emerald-400" />
+                <span className="text-sm font-medium text-emerald-400">Offline Ready</span>
+              </motion.div>
+            )}
+            {/* WebLLM Loading */}
+            {isWebLLMLoading && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-violet-500/20 border border-violet-500/30"
+              >
+                <Download className="w-4 h-4 text-violet-400 animate-pulse" />
+                <span className="text-sm font-medium text-violet-400">Loading Model...</span>
+              </motion.div>
+            )}
           </div>
 
           {activeProfile && (
@@ -367,7 +456,7 @@ export default function ChatPage() {
                 <BookOpen className="w-4 h-4" />
                 <span className="text-sm font-medium">Quiz</span>
               </button>
-              
+
               {/* Progress Button - Desktop */}
               <button
                 onClick={() => navigate('/progress')}
@@ -377,10 +466,10 @@ export default function ChatPage() {
                 <Trophy className="w-4 h-4" />
                 <span className="text-sm font-medium">Progress</span>
               </button>
-              
+
               {/* Low Bandwidth Toggle - Desktop */}
               <LowBandwidthToggle size="md" showTooltip={true} />
-              
+
               <span className="text-sm text-white/60">
                 Learning as <span className="text-violet-400 font-medium">{activeProfile.name}</span>
               </span>

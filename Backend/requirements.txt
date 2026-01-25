@@ -8,6 +8,9 @@ python-multipart
 httpx
 aiofiles
 
+# Web Search
+duckduckgo-search>=8.0.0
+
 # Database
 motor
 

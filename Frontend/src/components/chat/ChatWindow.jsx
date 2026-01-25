@@ -1,9 +1,9 @@
 import { useRef, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  MoreVertical, 
-  Trash2, 
-  Edit2, 
+import {
+  MoreVertical,
+  Trash2,
+  Edit2,
   Share2,
   Sparkles,
   BookOpen,
@@ -13,6 +13,7 @@ import MessageBubble from './MessageBubble';
 import AudioMessageBubble from './AudioMessageBubble';
 import ChatInputWithVoice from './ChatInputWithVoice';
 import { useNetworkStatus } from '../../contexts/NetworkStatusContext';
+import { useWebLLM } from '../../contexts/WebLLMContext';
 import { useLowBandwidthMode } from '../ui/LowBandwidthToggle';
 
 /**
@@ -35,12 +36,18 @@ export default function ChatWindow({
   const messagesContainerRef = useRef(null);
   const [showScrollButton, setShowScrollButton] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
-  
+
   // Network status for disabling input when offline
   const { isOnline } = useNetworkStatus();
-  
+
+  // WebLLM for offline mode - when model is ready, enable input even when offline
+  const { isModelReady: isOfflineModelReady } = useWebLLM();
+
   // Data Saver mode - disables chat input similar to offline mode
   const { isLowBandwidth } = useLowBandwidthMode();
+
+  // Only disable input if offline AND no offline model available
+  const isInputDisabled = !isOnline && !isOfflineModelReady;
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
@@ -93,8 +100,8 @@ export default function ChatWindow({
               <Sparkles className="w-12 h-12 text-violet-400" />
             </div>
             <h2 className="text-2xl font-bold text-white mb-3">
-              {activeProfile?.preferred_language === 'Hindi' 
-                ? 'नई बातचीत शुरू करें' 
+              {activeProfile?.preferred_language === 'Hindi'
+                ? 'नई बातचीत शुरू करें'
                 : 'Start a New Conversation'}
             </h2>
             <p className="text-white/60 mb-6">
@@ -123,7 +130,7 @@ export default function ChatWindow({
           <ChatInputWithVoice
             onSendMessage={onSendMessage}
             onSendVoice={onSendVoice}
-            disabled={isLoading || isSending || !isOnline || isLowBandwidth}
+            disabled={isLoading || isSending || isInputDisabled || isLowBandwidth}
             placeholder={getPlaceholder()}
             enableTTS={enableTTS}
             isOffline={!isOnline}
@@ -254,12 +261,12 @@ export default function ChatWindow({
         )}
       </AnimatePresence>
 
-      {/* Input Area - Disabled when offline or Data Saver */}
+      {/* Input Area - Disabled when offline without model or Data Saver */}
       <div className="flex-shrink-0 p-4 sm:p-6 border-t border-white/5">
         <ChatInputWithVoice
           onSendMessage={onSendMessage}
           onSendVoice={onSendVoice}
-          disabled={isLoading || isSending || !isOnline || isLowBandwidth}
+          disabled={isLoading || isSending || isInputDisabled || isLowBandwidth}
           placeholder={getPlaceholder()}
           enableTTS={enableTTS}
           isOffline={!isOnline}

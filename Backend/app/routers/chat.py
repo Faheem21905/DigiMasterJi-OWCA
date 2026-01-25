@@ -16,7 +16,7 @@ import re
 import json
 
 from app.models.conversation import ConversationCreate, ConversationResponse, ConversationUpdate
-from app.models.message import MessageResponse, MessageCreate, ChatMessageRequest, ChatMessageResponse, AudioTranscriptionResponse, DiagramData
+from app.models.message import MessageResponse, MessageCreate, ChatMessageRequest, ChatMessageResponse, AudioTranscriptionResponse
 from app.database.conversations import ConversationsDatabase
 from app.database.messages import MessagesDatabase
 from app.database.profiles import ProfilesDatabase
@@ -24,7 +24,6 @@ from app.utils.security import decode_access_token
 from app.services.chat_service import chat_service
 from app.services.stt_service import stt_service
 from app.services.tts_service import tts_service, SUPPORTED_LANGUAGES as TTS_SUPPORTED_LANGUAGES
-from app.services.diagram_service import diagram_service
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -232,7 +231,7 @@ async def get_conversation_history(
             audio_base64=msg.audio_base64,
             audio_format=msg.audio_format,
             audio_language=msg.audio_language,
-            audio_language_name=msg.audio_language_name
+            audio_language_name=msg.audio_language_name,
         )
         for msg in messages
     ]
@@ -497,7 +496,8 @@ async def send_message(
         user_message=message.content,
         subject=conversation.subject_tag,
         language=None,
-        profile_data=profile_data
+        profile_data=profile_data,
+        enable_web_search=message.enable_web_search
     )
     
     if not ai_result.get("success"):
@@ -547,27 +547,6 @@ async def send_message(
         assistant_msg_id=str(assistant_msg.id)
     )
     
-    # Generate diagram if appropriate and requested
-    diagram_data = None
-    if message.include_diagram:
-        try:
-            diagram_result = diagram_service.generate_diagram(
-                query=message.content,
-                response=ai_result["response"],
-                low_bandwidth=message.low_bandwidth
-            )
-            if diagram_result:
-                diagram_data = DiagramData(
-                    type=diagram_result["type"],
-                    diagram_type=diagram_result["diagram_type"],
-                    content=diagram_result["content"],
-                    title=diagram_result["title"],
-                    size_bytes=diagram_result.get("size_bytes")
-                )
-                logger.info(f"[CHAT] Generated {diagram_result['type']} diagram: {diagram_result['diagram_type']}")
-        except Exception as e:
-            logger.warning(f"[CHAT] Diagram generation failed (non-fatal): {e}")
-    
     return ChatMessageResponse(
         _id=str(assistant_msg.id),
         conversation_id=str(assistant_msg.conversation_id),
@@ -578,7 +557,6 @@ async def send_message(
         audio_format=audio_format,
         audio_language=audio_language,
         audio_language_name=audio_language_name,
-        diagram=diagram_data
     )
 
 
@@ -610,7 +588,8 @@ async def _stream_response(
                 user_message=message.content,
                 subject=conversation.subject_tag,
                 language=None,
-                profile_data=profile_data
+                profile_data=profile_data,
+                enable_web_search=message.enable_web_search
             ):
                 full_response += token
                 # Send token as SSE event
@@ -646,27 +625,6 @@ async def _stream_response(
                         assistant_msg_id=str(assistant_msg.id)
                     )
                 
-                # Generate diagram if appropriate and requested
-                diagram_data = None
-                if message.include_diagram:
-                    try:
-                        diagram_result = diagram_service.generate_diagram(
-                            query=message.content,
-                            response=full_response.strip(),
-                            low_bandwidth=message.low_bandwidth
-                        )
-                        if diagram_result:
-                            diagram_data = {
-                                "type": diagram_result["type"],
-                                "diagram_type": diagram_result["diagram_type"],
-                                "content": diagram_result["content"],
-                                "title": diagram_result["title"],
-                                "size_bytes": diagram_result.get("size_bytes")
-                            }
-                            logger.info(f"[CHAT STREAM] Generated {diagram_result['type']} diagram: {diagram_result['diagram_type']}")
-                    except Exception as e:
-                        logger.warning(f"[CHAT STREAM] Diagram generation failed (non-fatal): {e}")
-                
                 # Send completion event with message metadata
                 complete_data = json.dumps({
                     "type": "message_complete",
@@ -680,7 +638,6 @@ async def _stream_response(
                         "audio_format": audio_format,
                         "audio_language": audio_language,
                         "audio_language_name": audio_language_name,
-                        "diagram": diagram_data
                     }
                 })
                 yield f"data: {complete_data}\n\n"
@@ -1030,3 +987,205 @@ async def transcribe_audio(
                 logger.info(f"[STT] Cleaned up temp file: {temp_path}")
             except Exception as e:
                 logger.warning(f"[STT] Failed to delete temp file {temp_path}: {e}")
+
+
+# =============================================================================
+# Offline Chat Endpoints
+# =============================================================================
+
+@router.get("/offline/status", status_code=status.HTTP_200_OK)
+async def check_offline_status(
+    profile_id: str = Depends(get_current_profile_id)
+):
+    """
+    Check if offline chat mode is available.
+    
+    Returns:
+        Dictionary with offline availability status
+    """
+    is_available = await chat_service.check_offline_availability()
+    
+    from app.services.offline_llm_service import offline_llm_service
+    availability = await offline_llm_service.check_availability()
+    
+    return {
+        "offline_available": is_available,
+        "offline_model": availability.get("offline_model"),
+        "status": availability.get("status"),
+        "message": "Offline chat is available" if is_available else "Offline model not installed. Run: ollama pull gemma3:1b"
+    }
+
+
+@router.post(
+    "/{conversation_id}/message/offline",
+    status_code=status.HTTP_200_OK,
+    summary="Send a message using offline mode",
+    description="""
+    Send a message and receive a response using the local offline model.
+    
+    Offline mode features:
+    - Uses smaller Gemma3 270M parameter model
+    - All responses are in English
+    - No RAG or web search capabilities
+    - Works without internet connection
+    """
+)
+async def send_message_offline(
+    conversation_id: str,
+    message: ChatMessageRequest,
+    profile_id: str = Depends(get_current_profile_id)
+):
+    """
+    Send a message using offline mode (local model).
+    
+    Args:
+        conversation_id: The conversation's unique ID
+        message: The user's message content
+        profile_id: Profile ID from token
+        
+    Returns:
+        ChatMessageResponse with the AI's response in offline mode
+    """
+    # Check offline availability
+    is_available = await chat_service.check_offline_availability()
+    if not is_available:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Offline mode not available. Please install the offline model: ollama pull gemma3:1b"
+        )
+    
+    # Verify conversation exists
+    conversation = await ConversationsDatabase.get_conversation_by_id(conversation_id)
+    
+    if not conversation:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Conversation not found"
+        )
+    
+    if str(conversation.profile_id) != profile_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied to this conversation"
+        )
+    
+    # Save user message
+    user_message_data = MessageCreate(
+        content=message.content,
+        role="user"
+    )
+    
+    user_msg = await MessagesDatabase.create_message(
+        conversation_id=conversation_id,
+        profile_id=profile_id,
+        message_data=user_message_data
+    )
+    
+    # Check for streaming request
+    if message.stream:
+        return await _stream_offline_response(
+            conversation_id=conversation_id,
+            profile_id=profile_id,
+            message=message
+        )
+    
+    # Generate offline response
+    ai_result = await chat_service.generate_offline_response(
+        conversation_id=conversation_id,
+        user_message=message.content
+    )
+    
+    if not ai_result.get("success"):
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Offline generation failed: {ai_result.get('error', 'Unknown error')}"
+        )
+    
+    # Save the AI's response
+    assistant_message_data = MessageCreate(
+        content=ai_result["response"],
+        role="assistant"
+    )
+    
+    assistant_msg = await MessagesDatabase.create_message(
+        conversation_id=conversation_id,
+        profile_id=profile_id,
+        message_data=assistant_message_data
+    )
+    
+    await ConversationsDatabase.update_conversation_timestamp(conversation_id)
+    
+    return ChatMessageResponse(
+        _id=str(assistant_msg.id),
+        conversation_id=str(assistant_msg.conversation_id),
+        role="assistant",
+        content=assistant_msg.content,
+        timestamp=assistant_msg.timestamp,
+        offline_mode=True
+    )
+
+
+async def _stream_offline_response(
+    conversation_id: str,
+    profile_id: str,
+    message: ChatMessageRequest
+) -> StreamingResponse:
+    """
+    Generate and stream offline AI response using SSE.
+    """
+    async def event_generator() -> AsyncGenerator[str, None]:
+        full_response = ""
+        
+        try:
+            # Stream tokens from offline service
+            async for token in chat_service.generate_offline_response_stream(
+                conversation_id=conversation_id,
+                user_message=message.content
+            ):
+                full_response += token
+                event_data = json.dumps({"token": token})
+                yield f"data: {event_data}\n\n"
+            
+            # Save the complete response
+            if full_response.strip():
+                assistant_message_data = MessageCreate(
+                    content=full_response.strip(),
+                    role="assistant"
+                )
+                
+                assistant_msg = await MessagesDatabase.create_message(
+                    conversation_id=conversation_id,
+                    profile_id=profile_id,
+                    message_data=assistant_message_data
+                )
+                
+                await ConversationsDatabase.update_conversation_timestamp(conversation_id)
+                
+                # Send completion event
+                complete_data = json.dumps({
+                    "type": "message_complete",
+                    "message": {
+                        "_id": str(assistant_msg.id),
+                        "conversation_id": str(assistant_msg.conversation_id),
+                        "role": "assistant",
+                        "content": full_response.strip(),
+                        "timestamp": assistant_msg.timestamp.isoformat(),
+                        "offline_mode": True
+                    }
+                })
+                yield f"data: {complete_data}\n\n"
+            
+        except Exception as e:
+            logger.error(f"[OFFLINE STREAM] Error: {e}")
+            error_data = json.dumps({"type": "error", "error": str(e)})
+            yield f"data: {error_data}\n\n"
+    
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no"
+        }
+    )

@@ -6,10 +6,10 @@ CRUD operations for the student profiles collection.
 
 from motor.motor_asyncio import AsyncIOMotorClient
 from bson import ObjectId
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from datetime import datetime
 
-from app.models.profile import ProfileCreate, ProfileInDB, ProfileUpdate, Gamification, LearningPreferences
+from app.models.profile import ProfileCreate, ProfileInDB, ProfileUpdate, Gamification, LearningPreferences, StoredLearningInsights
 from app.database.mongodb import get_database
 
 
@@ -472,4 +472,74 @@ class ProfilesDatabase:
         
         if result:
             return ProfileInDB(**result)
+        return None
+
+    @staticmethod
+    async def update_learning_insights(
+        profile_id: str,
+        insights_data: Dict[str, Any]
+    ) -> Optional[ProfileInDB]:
+        """
+        Update profile's learning insights (auto-generated after quiz).
+        
+        Args:
+            profile_id: Profile's ObjectId as string
+            insights_data: Learning insights dictionary from quiz_summary_service
+                          This is stored directly to preserve the LLM output format
+                          that the frontend expects.
+            
+        Returns:
+            Updated ProfileInDB or None
+        """
+        if not ObjectId.is_valid(profile_id):
+            return None
+            
+        collection = await ProfilesDatabase.get_collection()
+        
+        # Store the insights data directly - preserve the full structure
+        # The frontend expects fields like: overall_assessment, subject_insights,
+        # weak_topics_explanation, strengths, weekly_goals, etc.
+        # Add/update the generated_at timestamp
+        insights_doc = {
+            **insights_data,
+            "generated_at": datetime.utcnow()
+        }
+        
+        result = await collection.find_one_and_update(
+            {"_id": ObjectId(profile_id)},
+            {
+                "$set": {
+                    "learning_insights": insights_doc,
+                    "updated_at": datetime.utcnow()
+                }
+            },
+            return_document=True
+        )
+        
+        if result:
+            return ProfileInDB(**result)
+        return None
+
+    @staticmethod
+    async def get_learning_insights(profile_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Get stored learning insights for a profile.
+        
+        Args:
+            profile_id: Profile's ObjectId as string
+            
+        Returns:
+            Learning insights dictionary or None
+        """
+        if not ObjectId.is_valid(profile_id):
+            return None
+            
+        collection = await ProfilesDatabase.get_collection()
+        profile_doc = await collection.find_one(
+            {"_id": ObjectId(profile_id)},
+            {"learning_insights": 1}
+        )
+        
+        if profile_doc and profile_doc.get("learning_insights"):
+            return profile_doc["learning_insights"]
         return None

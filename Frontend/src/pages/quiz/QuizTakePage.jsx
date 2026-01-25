@@ -11,6 +11,11 @@ import {
   CheckCircle,
   X,
   Home,
+  Brain,
+  Lightbulb,
+  BookOpen,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { Button } from '../../components/ui';
 import { QuestionCard, QuizProgress, ConfettiEffect } from '../../components/quiz';
@@ -48,6 +53,13 @@ export default function QuizTakePage() {
   // Review mode state
   const [isReviewMode, setIsReviewMode] = useState(false);
   const [reviewAnswers, setReviewAnswers] = useState({});
+  
+  // AI Summary state
+  const [quizSummary, setQuizSummary] = useState(null);
+  const [loadingSummary, setLoadingSummary] = useState(false);
+  const [showSummary, setShowSummary] = useState(false);
+  const [expandedConcept, setExpandedConcept] = useState(null);
+  const [showHindi, setShowHindi] = useState(false);
 
   // Redirect if no active profile
   useEffect(() => {
@@ -95,6 +107,25 @@ export default function QuizTakePage() {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+  
+  // Helper for Hindi/English text
+  const getText = (english, hindi) => {
+    return showHindi && hindi ? hindi : english;
+  };
+  
+  // Fetch AI-generated quiz summary
+  const fetchQuizSummary = async (quizId) => {
+    try {
+      setLoadingSummary(true);
+      const response = await quizzesApi.generateQuizSummary(quizId);
+      setQuizSummary(response.data);
+    } catch (err) {
+      console.error('Error fetching quiz summary:', err);
+      // Don't show error to user, summary is optional enhancement
+    } finally {
+      setLoadingSummary(false);
+    }
   };
 
   // Current question
@@ -171,6 +202,9 @@ export default function QuizTakePage() {
         setShowConfetti(true);
         setTimeout(() => setShowConfetti(false), 4000);
       }
+      
+      // Fetch AI-generated quiz summary in background
+      fetchQuizSummary(quizId);
     } catch (err) {
       console.error('Error submitting quiz:', err);
       const errorMessage = err.response?.data?.detail || err.message || 'Failed to submit quiz';
@@ -362,6 +396,178 @@ export default function QuizTakePage() {
                 </p>
               </motion.div>
             )}
+            
+            {/* AI Summary Section */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 1.5 }}
+              className="mb-8"
+            >
+              <button
+                onClick={() => setShowSummary(!showSummary)}
+                className="w-full bg-gradient-to-r from-violet-500/20 to-purple-500/20 border border-violet-500/30 rounded-2xl p-4 flex items-center justify-between hover:bg-violet-500/30 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <Brain className="w-6 h-6 text-violet-400" />
+                  <div className="text-left">
+                    <h3 className="text-white font-semibold">AI Learning Summary</h3>
+                    <p className="text-white/60 text-sm">
+                      {loadingSummary ? 'Analyzing your performance...' : 'Personalized insights & study tips'}
+                    </p>
+                  </div>
+                </div>
+                {loadingSummary ? (
+                  <div className="w-5 h-5 border-2 border-violet-400/30 border-t-violet-400 rounded-full animate-spin" />
+                ) : showSummary ? (
+                  <ChevronUp className="w-5 h-5 text-white/50" />
+                ) : (
+                  <ChevronDown className="w-5 h-5 text-white/50" />
+                )}
+              </button>
+              
+              <AnimatePresence>
+                {showSummary && quizSummary && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="bg-white/5 rounded-2xl p-5 mt-3 space-y-4">
+                      {/* Language Toggle */}
+                      <div className="flex justify-end">
+                        <button
+                          onClick={() => setShowHindi(!showHindi)}
+                          className={`px-3 py-1 rounded-lg text-xs transition-all ${
+                            showHindi
+                              ? 'bg-orange-500 text-white'
+                              : 'bg-white/10 text-white/70 hover:bg-white/20'
+                          }`}
+                        >
+                          {showHindi ? 'English' : 'हिंदी'}
+                        </button>
+                      </div>
+                      
+                      {/* Summary Text */}
+                      <div className="bg-gradient-to-r from-violet-500/10 to-purple-500/10 rounded-xl p-4">
+                        <p className="text-white/90">
+                          {getText(quizSummary.summary_text, quizSummary.summary_text_hindi)}
+                        </p>
+                      </div>
+                      
+                      {/* Encouragement */}
+                      {quizSummary.encouragement && (
+                        <div className="flex items-start gap-3 bg-green-500/10 rounded-xl p-4">
+                          <span className="text-2xl">💪</span>
+                          <p className="text-green-300">
+                            {getText(quizSummary.encouragement, quizSummary.encouragement_hindi)}
+                          </p>
+                        </div>
+                      )}
+                      
+                      {/* Topics to Review */}
+                      {quizSummary.topics_to_review && quizSummary.topics_to_review.length > 0 && (
+                        <div>
+                          <h4 className="text-amber-400 font-medium mb-2 flex items-center gap-2">
+                            <Lightbulb className="w-4 h-4" />
+                            Topics to Review
+                          </h4>
+                          <div className="flex flex-wrap gap-2">
+                            {quizSummary.topics_to_review.map((topic, i) => (
+                              <span
+                                key={i}
+                                className="px-3 py-1 bg-amber-500/10 text-amber-300 rounded-lg text-sm"
+                              >
+                                {topic}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Study Tips */}
+                      {quizSummary.study_tips && quizSummary.study_tips.length > 0 && (
+                        <div>
+                          <h4 className="text-cyan-400 font-medium mb-2 flex items-center gap-2">
+                            <BookOpen className="w-4 h-4" />
+                            Study Tips
+                          </h4>
+                          <ul className="space-y-2">
+                            {quizSummary.study_tips.map((tip, i) => (
+                              <li key={i} className="flex items-start gap-2 text-white/80 text-sm">
+                                <span className="text-cyan-400 mt-1">•</span>
+                                {tip}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      
+                      {/* Concepts Explained */}
+                      {quizSummary.concepts_explained && quizSummary.concepts_explained.length > 0 && (
+                        <div>
+                          <h4 className="text-violet-400 font-medium mb-2 flex items-center gap-2">
+                            <Brain className="w-4 h-4" />
+                            Concepts Explained
+                          </h4>
+                          <div className="space-y-2">
+                            {quizSummary.concepts_explained.map((concept, i) => (
+                              <div
+                                key={i}
+                                className="bg-white/5 rounded-lg overflow-hidden"
+                              >
+                                <button
+                                  onClick={() => setExpandedConcept(expandedConcept === i ? null : i)}
+                                  className="w-full p-3 flex items-center justify-between hover:bg-white/5 transition-colors"
+                                >
+                                  <span className="text-white font-medium">{concept.concept}</span>
+                                  {expandedConcept === i ? (
+                                    <ChevronUp className="w-4 h-4 text-white/50" />
+                                  ) : (
+                                    <ChevronDown className="w-4 h-4 text-white/50" />
+                                  )}
+                                </button>
+                                <AnimatePresence>
+                                  {expandedConcept === i && (
+                                    <motion.div
+                                      initial={{ height: 0 }}
+                                      animate={{ height: 'auto' }}
+                                      exit={{ height: 0 }}
+                                      className="overflow-hidden"
+                                    >
+                                      <p className="px-3 pb-3 text-white/70 text-sm">
+                                        {getText(concept.explanation, concept.explanation_hindi)}
+                                      </p>
+                                    </motion.div>
+                                  )}
+                                </AnimatePresence>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Next Steps */}
+                      {quizSummary.next_steps && (
+                        <div className="bg-blue-500/10 rounded-xl p-4">
+                          <h4 className="text-blue-400 font-medium mb-1">What's Next?</h4>
+                          <p className="text-white/80 text-sm">{quizSummary.next_steps}</p>
+                        </div>
+                      )}
+                      
+                      {/* Link to Full Insights */}
+                      <button
+                        onClick={() => navigate('/insights')}
+                        className="w-full py-3 bg-gradient-to-r from-violet-500/20 to-purple-500/20 border border-violet-500/30 rounded-xl text-violet-300 hover:bg-violet-500/30 transition-colors text-sm"
+                      >
+                        View Full Learning Insights →
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
 
             {/* Action Buttons */}
             <motion.div

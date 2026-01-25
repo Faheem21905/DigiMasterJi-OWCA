@@ -11,14 +11,17 @@ export { ProfileSelectionPage, CreateProfilePage, EditProfilePage } from './prof
 export { ChatPage } from './chat';
 
 // Quiz & Gamification Pages
-export { QuizListPage, QuizTakePage, QuizRevisionPage, GamificationDashboard } from './quiz';
+export { QuizListPage, QuizTakePage, QuizRevisionPage, GamificationDashboard, LearningInsightsPage } from './quiz';
+
+// Settings Pages
+export { SettingsPage } from './settings';
 
 // Admin Pages
-export { 
-  AdminDashboardPage, 
-  UploadDocumentPage, 
-  DocumentsListPage, 
-  VectorSearchPage 
+export {
+  AdminDashboardPage,
+  UploadDocumentPage,
+  DocumentsListPage,
+  VectorSearchPage
 } from './admin';
 
 // Demo Pages (for development/testing)
