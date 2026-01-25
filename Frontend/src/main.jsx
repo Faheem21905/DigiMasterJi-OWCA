@@ -5,13 +5,16 @@ import App from './App.jsx'
 import { AuthProvider } from './contexts/AuthContext'
 import { ProfileProvider } from './contexts/ProfileContext'
 import { NetworkStatusProvider } from './contexts/NetworkStatusContext'
+import { WebLLMProvider } from './contexts/WebLLMContext'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <AuthProvider>
       <ProfileProvider>
         <NetworkStatusProvider>
-          <App />
+          <WebLLMProvider>
+            <App />
+          </WebLLMProvider>
         </NetworkStatusProvider>
       </ProfileProvider>
     </AuthProvider>

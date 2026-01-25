@@ -33,7 +33,7 @@ export const chatApi = {
     // Add cache-busting timestamp to prevent browser from caching responses
     // across different profiles (URL is same, only Auth header differs)
     const cacheBuster = Date.now();
-    return apiClient.get('/chat/sessions', { 
+    return apiClient.get('/chat/sessions', {
       params: { ...params, _t: cacheBuster },
       headers: {
         'Cache-Control': 'no-cache, no-store, must-revalidate',
@@ -126,7 +126,7 @@ export const chatApi = {
   sendMessageStream: async (conversationId, data, callbacks = {}) => {
     const { onToken, onComplete, onError } = callbacks;
     const profileToken = getProfileToken();
-    
+
     if (!profileToken) {
       onError?.(new Error('No profile token available'));
       return;
@@ -156,13 +156,13 @@ export const chatApi = {
 
       while (true) {
         const { done, value } = await reader.read();
-        
+
         if (done) {
           break;
         }
 
         buffer += decoder.decode(value, { stream: true });
-        
+
         // Process complete SSE events from buffer
         const lines = buffer.split('\n');
         buffer = lines.pop() || ''; // Keep incomplete line in buffer
@@ -215,11 +215,11 @@ export const chatApi = {
    */
   uploadAudio: (conversationId, audioFile, language = null) => {
     const formData = new FormData();
-    
+
     // Ensure the file has a proper name and extension
     const fileName = audioFile.name || `recording_${Date.now()}.webm`;
     formData.append('file', audioFile, fileName);
-    
+
     // Add language if specified
     if (language) {
       formData.append('language', language);
@@ -274,7 +274,7 @@ export const chatApi = {
   sendMessageOfflineStream: async (conversationId, data, callbacks = {}) => {
     const { onToken, onComplete, onError } = callbacks;
     const profileToken = getProfileToken();
-    
+
     if (!profileToken) {
       onError?.(new Error('No profile token available'));
       return;
@@ -304,13 +304,13 @@ export const chatApi = {
 
       while (true) {
         const { done, value } = await reader.read();
-        
+
         if (done) {
           break;
         }
 
         buffer += decoder.decode(value, { stream: true });
-        
+
         // Process complete SSE events from buffer
         const lines = buffer.split('\n');
         buffer = lines.pop() || ''; // Keep incomplete line in buffer
@@ -343,6 +343,45 @@ export const chatApi = {
       }
     } catch (error) {
       console.error('Offline streaming error:', error);
+      onError?.(error);
+    }
+  },
+
+  // ==================== TRUE OFFLINE MODE (WebLLM - No Backend) ====================
+
+  /**
+   * Send a message using WebLLM (runs entirely in browser).
+   * This is for TRUE offline mode when the device has no internet at all.
+   * 
+   * @param {string} message - User's message
+   * @param {Object} webLLMContext - WebLLM context from useWebLLM()
+   * @param {Object} callbacks - { onToken, onComplete, onError }
+   * @returns {Promise<void>}
+   */
+  sendMessageTrueOffline: async (message, webLLMContext, callbacks = {}) => {
+    const { generateStreamingResponse, isModelReady } = webLLMContext;
+    const { onToken, onComplete, onError } = callbacks;
+
+    if (!isModelReady) {
+      onError?.(new Error('Offline model not loaded. Please download it first.'));
+      return;
+    }
+
+    try {
+      await generateStreamingResponse(message, {
+        onToken,
+        onComplete: (response) => {
+          onComplete?.({
+            ...response,
+            _id: `offline_${Date.now()}`,
+            conversation_id: 'offline_local',
+            timestamp: new Date().toISOString(),
+          });
+        },
+        onError,
+      });
+    } catch (error) {
+      console.error('True offline chat error:', error);
       onError?.(error);
     }
   },

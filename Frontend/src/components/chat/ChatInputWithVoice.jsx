@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Send, 
-  Mic, 
+import {
+  Send,
+  Mic,
   MicOff,
   Square,
   Loader2,
@@ -12,8 +12,7 @@ import {
   AlertCircle,
   WifiOff,
   Zap,
-  Globe,
-  GlobeOff,
+  Globe
 } from 'lucide-react';
 import { useAudioRecorder } from '../../hooks/useAudioRecorder';
 
@@ -28,7 +27,7 @@ import { useAudioRecorder } from '../../hooks/useAudioRecorder';
  * - TTS toggle for AI responses
  * - Web search toggle for live internet searches
  */
-export default function ChatInput({ 
+export default function ChatInput({
   onSendMessage,
   onSendVoice,
   disabled = false,
@@ -71,7 +70,7 @@ export default function ChatInput({
   const handleSubmit = (e) => {
     e.preventDefault();
     if (message.trim() && !disabled) {
-      onSendMessage?.(message.trim(), { 
+      onSendMessage?.(message.trim(), {
         includeAudio: ttsEnabled,
         enableWebSearch: webSearchEnabled,
       });
@@ -102,7 +101,7 @@ export default function ChatInput({
 
   const handleSendVoice = async () => {
     if (audioBlob && onSendVoice) {
-      await onSendVoice(audioBlob, { 
+      await onSendVoice(audioBlob, {
         includeAudio: ttsEnabled,
         enableWebSearch: webSearchEnabled,
       });
@@ -166,7 +165,7 @@ export default function ChatInput({
                   transition={{ duration: 1, repeat: Infinity }}
                   className="w-3 h-3 rounded-full bg-red-500"
                 />
-                
+
                 {/* Audio Level Bars */}
                 <div className="flex items-center gap-0.5 h-8">
                   {[...Array(20)].map((_, i) => (
@@ -281,7 +280,7 @@ export default function ChatInput({
         ${isFocused ? 'opacity-50' : ''}
       `} />
 
-      <form 
+      <form
         onSubmit={handleSubmit}
         className={`
           relative flex items-end gap-2 p-3
@@ -306,8 +305,8 @@ export default function ChatInput({
               transition-all duration-200
               ${(isDataSaverMode || isOffline)
                 ? 'bg-white/5 text-white/20 cursor-not-allowed'
-                : webSearchEnabled 
-                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
+                : webSearchEnabled
+                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
                   : 'bg-white/5 text-white/50 border border-white/10 hover:bg-white/10 hover:text-white/70'
               }
             `}
@@ -320,7 +319,7 @@ export default function ChatInput({
               </>
             ) : (
               <>
-                <GlobeOff className="w-3.5 h-3.5" />
+                <Globe className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Search</span>
               </>
             )}
@@ -338,8 +337,8 @@ export default function ChatInput({
             p-2 rounded-xl transition-all
             ${(isDataSaverMode || isOffline)
               ? 'bg-white/5 text-white/20 cursor-not-allowed'
-              : ttsEnabled 
-                ? 'bg-emerald-500/20 text-emerald-400' 
+              : ttsEnabled
+                ? 'bg-emerald-500/20 text-emerald-400'
                 : 'bg-white/10 text-white/40 hover:text-white/60'
             }
           `}

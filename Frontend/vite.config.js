@@ -6,7 +6,7 @@ import { VitePWA } from 'vite-plugin-pwa'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
-    react(), 
+    react(),
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
@@ -42,6 +42,8 @@ export default defineConfig({
       workbox: {
         // Cache all assets
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
+        // Increase max file size for caching (WebLLM library is large)
+        maximumFileSizeToCacheInBytes: 10 * 1024 * 1024, // 10MB
         // Runtime caching for API calls - network first
         runtimeCaching: [
           {

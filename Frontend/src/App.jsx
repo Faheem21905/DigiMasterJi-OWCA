@@ -1,9 +1,9 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { 
+import {
   LandingPage,
-  LoginPage, 
-  RegisterPage, 
-  ProfileSelectionPage, 
+  LoginPage,
+  RegisterPage,
+  ProfileSelectionPage,
   CreateProfilePage,
   EditProfilePage,
   ChatPage,
@@ -12,6 +12,7 @@ import {
   QuizRevisionPage,
   GamificationDashboard,
   LearningInsightsPage,
+  SettingsPage,
   AdminDashboardPage,
   UploadDocumentPage,
   DocumentsListPage,
@@ -146,6 +147,16 @@ function App() {
           element={
             <PrivateRoute>
               <LearningInsightsPage />
+            </PrivateRoute>
+          }
+        />
+
+        {/* Settings Route */}
+        <Route
+          path="/settings"
+          element={
+            <PrivateRoute>
+              <SettingsPage />
             </PrivateRoute>
           }
         />

@@ -42,35 +42,106 @@ class Gamification(BaseModel):
     badges: List[str] = Field(default_factory=list)
 
 class SubjectInsightData(BaseModel):
-    """Individual subject insight data stored in profile."""
+    """Legacy subject insight data format (for backwards compatibility)."""
     subject: str
-    average_score: float
-    total_quizzes: int
-    performance_trend: str  # "improving", "declining", "stable"
-    weak_topics: List[str] = Field(default_factory=list)
-    strong_topics: List[str] = Field(default_factory=list)
-    recommendation: str = ""
+    average_score: Optional[float] = 0.0
+    total_quizzes: Optional[int] = 0
+    performance_trend: Optional[str] = "stable"
+    weak_topics: Optional[List[str]] = Field(default_factory=list)
+    strong_topics: Optional[List[str]] = Field(default_factory=list)
+    recommendation: Optional[str] = ""
 
+class WeeklyGoal(BaseModel):
+    """Weekly goal with bilingual support."""
+    goal: str
+    goal_hindi: Optional[str] = ""
+    subject: Optional[str] = "General"
+
+class OverallAssessment(BaseModel):
+    """Overall assessment from insights."""
+    level: str = "average"
+    summary: str = ""
+    summary_hindi: Optional[str] = ""
+
+class StrengthItem(BaseModel):
+    """Strength item with praise."""
+    area: str
+    praise: str = ""
+    praise_hindi: Optional[str] = ""
+
+class WeakTopicExplanation(BaseModel):
+    """Weak topic explanation."""
+    topic: str
+    explanation: str = ""
+    explanation_hindi: Optional[str] = ""
+
+class SubjectInsight(BaseModel):
+    """Subject insight from quiz analysis."""
+    subject: str
+    status: Optional[str] = "average"
+    score_average: Optional[float] = 0.0
+    performance_trend: Optional[str] = "stable"
+    improvement_areas: Optional[List[str]] = Field(default_factory=list)
+    strong_areas: Optional[List[str]] = Field(default_factory=list)
+    recommendation: Optional[str] = ""
+    recommendation_hindi: Optional[str] = ""
 
 class StoredLearningInsights(BaseModel):
-    """Learning insights stored in profile after quiz completion."""
-    generated_at: datetime = Field(default_factory=datetime.utcnow)
-    overall_score: float = 0.0
-    total_quizzes_analyzed: int = 0
-    subjects: List[SubjectInsightData] = Field(default_factory=list)
-    weak_areas_summary: str = ""
-    strengths_summary: str = ""
-    personalized_recommendations: List[str] = Field(default_factory=list)
-    weekly_goals: List[str] = Field(default_factory=list)
-    motivational_message: str = ""
-    motivational_message_hindi: str = ""    
+    """
+    Learning insights stored in profile after quiz completion.
+    Supports both the new LLM format and legacy flat format.
+    Uses Union types to accept both string and dict formats for array fields.
+    """
+    # Metadata
+    generated_at: Optional[datetime] = Field(default_factory=datetime.utcnow)
+    analysis_period_days: Optional[int] = 30
+    has_data: Optional[bool] = True
+    rag_enhanced: Optional[bool] = False
+    
+    # Core stats
+    total_quizzes: Optional[int] = 0
+    overall_average: Optional[float] = 0.0
+    performance_trend: Optional[str] = "neutral"
+    
+    # New LLM format fields - using Any to accept both old and new formats
+    overall_assessment: Optional[OverallAssessment] = None
+    subject_insights: Optional[List[SubjectInsight]] = Field(default_factory=list)
+    
+    # These fields accept BOTH strings (old format) and dicts (new format)
+    weak_topics_explanation: Optional[List] = Field(default_factory=list)  # List[str | WeakTopicExplanation]
+    strengths: Optional[List] = Field(default_factory=list)  # List[str | StrengthItem]
+    weekly_goals: Optional[List] = Field(default_factory=list)  # List[str | WeeklyGoal]
+    
+    personalized_recommendations: Optional[List[str]] = Field(default_factory=list)
+    motivational_message: Optional[str] = ""
+    motivational_message_hindi: Optional[str] = ""
+    
+    # Profile info (may be included)
+    profile_name: Optional[str] = None
+    grade_level: Optional[str] = None
+    
+    # Legacy fields for backwards compatibility
+    overall_score: Optional[float] = None
+    total_quizzes_analyzed: Optional[int] = None
+    subjects: Optional[List[SubjectInsightData]] = None
+    weak_areas_summary: Optional[str] = None
+    strengths_summary: Optional[str] = None
+
     class Config:
+        extra = "allow"  # Allow extra fields for flexibility
         json_schema_extra = {
             "example": {
-                "xp": 1500,
-                "current_streak_days": 3,
-                "last_activity_date": "2024-01-20T10:30:00",
-                "badges": ["math_wizard", "early_bird"]
+                "generated_at": "2024-01-20T10:30:00",
+                "total_quizzes": 5,
+                "overall_average": 75.5,
+                "overall_assessment": {
+                    "level": "good",
+                    "summary": "You're doing well!",
+                    "summary_hindi": "आप अच्छा कर रहे हैं!"
+                },
+                "weekly_goals": [
+                    {"goal": "Practice daily", "goal_hindi": "रोज अभ्यास करें", "subject": "Math"}
+                ]
             }
         }
 

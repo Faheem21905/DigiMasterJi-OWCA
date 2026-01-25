@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Send, Mic, Paperclip, Smile, Loader2, Globe, GlobeOff } from 'lucide-react';
+import { Send, Mic, Paperclip, Smile, Loader2, Globe } from 'lucide-react';
 
 /**
  * ChatInput Component
  * Text input area with send button and optional voice/attachment/web search buttons
  */
-export default function ChatInput({ 
+export default function ChatInput({
   onSendMessage,
   onStartRecording,
   disabled = false,
@@ -60,8 +60,8 @@ export default function ChatInput({
             className={`
               flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium
               transition-all duration-200
-              ${enableWebSearch 
-                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
+              ${enableWebSearch
+                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
                 : 'bg-white/5 text-white/50 border border-white/10 hover:bg-white/10 hover:text-white/70'
               }
             `}
@@ -74,7 +74,7 @@ export default function ChatInput({
               </>
             ) : (
               <>
-                <GlobeOff className="w-3.5 h-3.5" />
+                <Globe className="w-3.5 h-3.5" />
                 <span>Web Search</span>
               </>
             )}
@@ -82,7 +82,7 @@ export default function ChatInput({
         )}
       </div>
 
-      <form 
+      <form
         onSubmit={handleSubmit}
         className={`
           relative flex items-end gap-2 p-3
