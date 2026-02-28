@@ -40,13 +40,14 @@ export default function ChatWindow({
   // Network status for disabling input when offline
   const { isOnline } = useNetworkStatus();
 
-  // WebLLM for offline mode - when model is ready, enable input even when offline
-  const { isModelReady: isOfflineModelReady } = useWebLLM();
+  // WebLLM for offline mode - when model is ready and enabled, allow input even when offline
+  const { isModelReady: isOfflineModelReady, useOfflineChat } = useWebLLM();
 
   // Data Saver mode - disables chat input similar to offline mode
   const { isLowBandwidth } = useLowBandwidthMode();
 
-  // Only disable input if offline AND no offline model available
+  // Only disable input if offline AND no offline model available (or not ready)
+  // useOfflineChat is automatically set true when offline + model ready
   const isInputDisabled = !isOnline && !isOfflineModelReady;
 
   // Auto-scroll to bottom on new messages
@@ -125,7 +126,7 @@ export default function ChatWindow({
           </motion.div>
         </div>
 
-        {/* Input Area - Always visible but disabled when offline or Data Saver */}
+        {/* Input Area - Always visible but disabled when offline without model or Data Saver */}
         <div className="flex-shrink-0 p-4 sm:p-6 border-t border-white/5">
           <ChatInputWithVoice
             onSendMessage={onSendMessage}
@@ -134,6 +135,7 @@ export default function ChatWindow({
             placeholder={getPlaceholder()}
             enableTTS={enableTTS}
             isOffline={!isOnline}
+            isOfflineModelReady={isOfflineModelReady}
             isDataSaverMode={isLowBandwidth}
           />
         </div>
@@ -270,6 +272,7 @@ export default function ChatWindow({
           placeholder={getPlaceholder()}
           enableTTS={enableTTS}
           isOffline={!isOnline}
+          isOfflineModelReady={isOfflineModelReady}
           isDataSaverMode={isLowBandwidth}
         />
       </div>

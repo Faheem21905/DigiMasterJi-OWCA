@@ -35,7 +35,8 @@ export default function ChatInput({
   showVoiceButton = true,
   enableTTS = true, // Default TTS enabled
   onTTSToggle,
-  isOffline = false, // Offline mode - disables input
+  isOffline = false, // Offline mode
+  isOfflineModelReady = false, // WebLLM model is ready for offline chat
   isDataSaverMode = false, // Data Saver mode - disables input to save data
 }) {
   const [message, setMessage] = useState('');
@@ -230,8 +231,8 @@ export default function ChatInput({
       animate={{ opacity: 1, y: 0 }}
       className="relative"
     >
-      {/* Offline Warning */}
-      {isOffline && (
+      {/* Offline Warning - only show when offline AND no model ready */}
+      {isOffline && !isOfflineModelReady && (
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -288,12 +289,12 @@ export default function ChatInput({
           border border-white/10 rounded-2xl
           transition-all duration-300
           ${isFocused ? 'border-violet-500/50 bg-white/10' : ''}
-          ${(isOffline || isDataSaverMode) ? 'opacity-60 cursor-not-allowed' : ''}
+          ${((isOffline && !isOfflineModelReady) || isDataSaverMode) ? 'opacity-60 cursor-not-allowed' : ''}
         `}
       >
         {/* Feature Toggle Buttons Row */}
         <div className="absolute -top-10 left-0 flex items-center gap-2">
-          {/* Web Search Toggle */}
+          {/* Web Search Toggle - disabled when offline */}
           <motion.button
             type="button"
             whileHover={{ scale: 1.05 }}
@@ -310,7 +311,7 @@ export default function ChatInput({
                   : 'bg-white/5 text-white/50 border border-white/10 hover:bg-white/10 hover:text-white/70'
               }
             `}
-            title={isDataSaverMode ? 'Disabled in Data Saver mode' : webSearchEnabled ? 'Web search enabled' : 'Enable web search'}
+            title={isOffline ? 'Unavailable offline' : isDataSaverMode ? 'Disabled in Data Saver mode' : webSearchEnabled ? 'Web search enabled' : 'Enable web search'}
           >
             {webSearchEnabled ? (
               <>
@@ -326,7 +327,7 @@ export default function ChatInput({
           </motion.button>
         </div>
 
-        {/* TTS Toggle Button */}
+        {/* TTS Toggle Button - disabled when offline (TTS requires network) */}
         <motion.button
           type="button"
           whileHover={{ scale: 1.05 }}
@@ -342,7 +343,7 @@ export default function ChatInput({
                 : 'bg-white/10 text-white/40 hover:text-white/60'
             }
           `}
-          title={isDataSaverMode ? 'Disabled in Data Saver mode' : ttsEnabled ? 'Voice responses ON' : 'Voice responses OFF'}
+          title={isOffline ? 'Voice unavailable offline' : isDataSaverMode ? 'Disabled in Data Saver mode' : ttsEnabled ? 'Voice responses ON' : 'Voice responses OFF'}
         >
           {ttsEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
         </motion.button>
@@ -355,7 +356,7 @@ export default function ChatInput({
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
             onKeyDown={handleKeyDown}
-            placeholder={isOffline ? "You're offline..." : isDataSaverMode ? "Data Saver is ON..." : placeholder}
+            placeholder={(isOffline && !isOfflineModelReady) ? "You're offline..." : isDataSaverMode ? "Data Saver is ON..." : placeholder}
             disabled={disabled || isDataSaverMode}
             rows={1}
             className="
@@ -376,7 +377,7 @@ export default function ChatInput({
           />
         </div>
 
-        {/* Voice Button */}
+        {/* Voice Button - disabled when offline (no STT available) */}
         {showVoiceButton && (
           <motion.button
             type="button"
@@ -392,7 +393,7 @@ export default function ChatInput({
               }
               disabled:opacity-50 disabled:cursor-not-allowed
             `}
-            title={isDataSaverMode ? 'Disabled in Data Saver mode' : permissionStatus === 'denied' ? 'Microphone access denied' : 'Voice message'}
+            title={isOffline ? 'Voice unavailable offline' : isDataSaverMode ? 'Disabled in Data Saver mode' : permissionStatus === 'denied' ? 'Microphone access denied' : 'Voice message'}
           >
             <Mic className="w-5 h-5" />
           </motion.button>
@@ -403,11 +404,11 @@ export default function ChatInput({
           type="submit"
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          disabled={!message.trim() || disabled || isDataSaverMode || isOffline}
+          disabled={!message.trim() || disabled || isDataSaverMode || (isOffline && !isOfflineModelReady)}
           className={`
             p-2.5 rounded-xl
             transition-all duration-200
-            ${message.trim() && !disabled && !isDataSaverMode && !isOffline
+            ${message.trim() && !disabled && !isDataSaverMode && !(isOffline && !isOfflineModelReady)
               ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-lg shadow-violet-500/30'
               : 'bg-white/10 text-white/30 cursor-not-allowed'
             }

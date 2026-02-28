@@ -9,7 +9,38 @@ Note: Audio data is excluded from sync responses as per requirement.
 
 from pydantic import BaseModel, Field
 from typing import Optional, List
-from datetime import datetime
+from datetime import datetime, date
+
+
+class SyncQuizQuestionResponse(BaseModel):
+    """Quiz question model for sync response."""
+    question_id: str
+    question_text: str
+    options: List[str]
+    correct_answer: str
+    user_answer: Optional[str] = None
+    
+    class Config:
+        populate_by_name = True
+
+
+class SyncQuizResponse(BaseModel):
+    """Quiz model for sync response."""
+    id: str = Field(..., alias="_id")
+    profile_id: str
+    topic: str
+    difficulty: str
+    quiz_date: date
+    created_at: datetime
+    status: str
+    score: Optional[int] = None
+    completed_at: Optional[datetime] = None
+    xp_earned: Optional[int] = None
+    questions: List[SyncQuizQuestionResponse] = Field(default_factory=list)
+    is_backlog: bool = False
+    
+    class Config:
+        populate_by_name = True
 
 
 class SyncMessageResponse(BaseModel):
@@ -86,7 +117,7 @@ class SyncLearningPreferencesResponse(BaseModel):
 class SyncProfileResponse(BaseModel):
     """
     Profile model for sync response.
-    Includes nested conversations with their messages.
+    Includes nested conversations with their messages, and quizzes.
     """
     id: str = Field(..., alias="_id")
     master_user_id: str
@@ -100,6 +131,7 @@ class SyncProfileResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     conversations: List[SyncConversationResponse] = Field(default_factory=list)
+    quizzes: List[SyncQuizResponse] = Field(default_factory=list)
     
     class Config:
         populate_by_name = True
@@ -154,6 +186,7 @@ class SyncPullResponse(BaseModel):
     total_profiles: int = 0
     total_conversations: int = 0
     total_messages: int = 0
+    total_quizzes: int = 0
     sync_period_days: int = 180
     
     class Config:
@@ -169,6 +202,7 @@ class SyncPullResponse(BaseModel):
                 "total_profiles": 2,
                 "total_conversations": 5,
                 "total_messages": 150,
+                "total_quizzes": 10,
                 "sync_period_days": 180
             }
         }

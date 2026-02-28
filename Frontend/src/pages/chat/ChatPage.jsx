@@ -409,8 +409,8 @@ export default function ChatPage() {
             </div>
             {/* Network Status Badge - Desktop */}
             <NetworkStatusBadge variant="pill" size="sm" />
-            {/* TRUE Offline Mode Active (WebLLM) */}
-            {useTrueOfflineChat && isWebLLMReady && (
+            {/* TRUE Offline Mode Active (WebLLM) - when offline and model ready */}
+            {!isOnline && isWebLLMReady && (
               <motion.div
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -432,7 +432,7 @@ export default function ChatPage() {
               </motion.div>
             )}
             {/* WebLLM Ready Indicator (when online) */}
-            {isOnline && isWebLLMReady && !useTrueOfflineChat && (
+            {isOnline && isWebLLMReady && (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
