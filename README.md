@@ -4,7 +4,7 @@
 
 [![Demo Video](https://img.shields.io/badge/Demo-YouTube-red?style=for-the-badge&logo=youtube)](https://youtu.be/dna60bJggGI)
 [![Live Prototype](https://img.shields.io/badge/Prototype-Vercel-black?style=for-the-badge&logo=vercel)](https://digimasterji.vercel.app/)
-[![Hackathon](https://img.shields.io/badge/AMD-Slingshot%20Hackathon-orange?style=for-the-badge)](https://amd.devpost.com/)
+[![Hackathon](https://img.shields.io/badge/AMD-Slingshot%20Hackathon-orange?style=for-the-badge)](https://amdslingshot.in/?utm_source=hack2skill&utm_medium=homepage)
 
 ---
 
