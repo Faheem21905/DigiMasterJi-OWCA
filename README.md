@@ -37,6 +37,7 @@
 | 📴 **Offline-First Architecture** | Works without internet using WebLLM browser AI                                              |
 | 🎮 **Gamified Learning**          | XP system, streaks, badges, and AI-generated quizzes                                        |
 | 👨‍👩‍👧‍👦 **Family Profiles**            | Netflix-style multi-profile system for families                                             |
+| 🕷️ **Agentic Web Scraper**        | LLM-driven website crawler that intelligently scrapes and adds content to the knowledge base |
 
 ---
 
@@ -288,6 +289,14 @@ DigiMasterJi/
 - Parent/guardian master accounts
 - Individual child profiles with separate progress
 - Profile-specific learning analytics
+
+### 6. Agentic Web Scraper
+
+- **LLM-Driven Crawling:** Uses Gemma 3 4B via Ollama to make intelligent decisions instead of regex rules
+- **3 AI Decision Points:** Should I visit this URL? → Is this content relevant? → Which links should I follow?
+- **Playwright Browser Automation:** Full headless browser for JavaScript-rendered content
+- **Auto RAG Integration:** Scraped content is automatically chunked, embedded, and added to the knowledge base
+- **Admin Dashboard UI:** Configurable settings, live progress with agent decision log, and job history
 
 ---
 

@@ -28,7 +28,7 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 
 # LLM config for the scraper agent
-SCRAPER_LLM_MODEL = os.getenv("OLLAMA_OFFLINE_MODEL", "gemma3:4b-cloud")
+SCRAPER_LLM_MODEL = os.getenv("OLLAMA_SCRAPER_MODEL", "gemma3:4b-cloud")
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 
 
