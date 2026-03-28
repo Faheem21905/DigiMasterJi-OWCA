@@ -14,6 +14,7 @@ import {
   ChevronRight,
   Database,
   Users,
+  Globe,
 } from 'lucide-react';
 import { NetworkStatusBadge, OfflineBanner } from '../ui';
 import { useNetworkStatus } from '../../contexts/NetworkStatusContext';
@@ -23,6 +24,7 @@ const navItems = [
   { path: '/admin/upload', icon: Upload, label: 'Upload Document' },
   { path: '/admin/documents', icon: FileText, label: 'Documents' },
   { path: '/admin/search', icon: Search, label: 'Vector Search' },
+  { path: '/admin/scraper', icon: Globe, label: 'Web Scraper' },
 ];
 
 export default function AdminLayout() {

@@ -54,3 +54,7 @@ pytest
 pytest-asyncio
 black
 flake8
+
+# Web Scraper
+playwright
+beautifulsoup4

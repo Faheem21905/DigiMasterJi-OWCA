@@ -80,6 +80,45 @@ export const adminApi = {
   getRagInfo: () => {
     return apiClient.get('/admin/rag-info');
   },
+
+  // ---- Web Scraper ----
+
+  /**
+   * Start a web scraping job
+   * @param {Object} config - Scraper configuration
+   * @returns {Promise} - { job_id, message }
+   */
+  startScraping: (config) => {
+    return apiClient.post('/admin/scraper/start', config, {
+      timeout: 30000,
+    });
+  },
+
+  /**
+   * Get the status of a scraping job
+   * @param {string} jobId - Job ID
+   * @returns {Promise} - Job status with agent_log
+   */
+  getScraperStatus: (jobId) => {
+    return apiClient.get(`/admin/scraper/status/${jobId}`);
+  },
+
+  /**
+   * Stop a running scraping job
+   * @param {string} jobId - Job ID
+   * @returns {Promise}
+   */
+  stopScraping: (jobId) => {
+    return apiClient.post(`/admin/scraper/stop/${jobId}`);
+  },
+
+  /**
+   * Get list of past scraping jobs
+   * @returns {Promise} - { jobs: [...] }
+   */
+  getScraperJobs: () => {
+    return apiClient.get('/admin/scraper/jobs');
+  },
 };
 
 /**

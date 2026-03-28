@@ -193,6 +193,13 @@ export default function AdminDashboardPage() {
               color="bg-gradient-to-br from-amber-500 to-orange-600"
               onClick={loadDashboardData}
             />
+            <QuickAction
+              icon={TrendingUp}
+              label="Web Scraper"
+              description="Scrape websites with AI agent"
+              color="bg-gradient-to-br from-teal-500 to-cyan-600"
+              onClick={() => navigate('/admin/scraper')}
+            />
           </div>
         </div>
 

@@ -265,3 +265,125 @@ async def get_rag_info(
         "success": True,
         **rag_service.get_info()
     }
+
+
+# ===========================================================================
+# Web Scraper Endpoints
+# ===========================================================================
+
+from app.models.scraper import ScraperStartRequest, ScraperJobResponse
+from app.services.web_scraper_service import WebScraperService, load_jobs_from_db
+import hashlib as _hashlib
+from datetime import datetime as _datetime
+import asyncio as _asyncio
+
+
+@router.post(
+    "/scraper/start",
+    summary="Start a web scraping job",
+    description="Start an agentic web scraping job with LLM-driven URL and content decisions."
+)
+async def start_scraper(
+    request: ScraperStartRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """Start a new web scraping job that runs in the background."""
+    # Generate a job ID
+    job_id = _hashlib.md5(
+        f"{request.base_url}_{_datetime.utcnow().isoformat()}".encode()
+    ).hexdigest()[:12]
+
+    logger.info(f"[SCRAPER] Starting scraping job {job_id} for {request.base_url}")
+
+    # Launch the scraping task in the background
+    _asyncio.create_task(
+        WebScraperService.start_job(
+            job_id=job_id,
+            base_url=request.base_url,
+            purpose=request.purpose,
+            max_pages=request.max_pages,
+            max_depth=request.max_depth,
+            delay=request.delay,
+            subject=request.subject.value,
+            language=request.language.value,
+            headless=request.headless,
+            auto_add_to_rag=request.auto_add_to_rag,
+        )
+    )
+
+    return {
+        "success": True,
+        "job_id": job_id,
+        "message": f"Scraping job started for {request.base_url}",
+    }
+
+
+@router.get(
+    "/scraper/status/{job_id}",
+    summary="Get scraper job status",
+    description="Get the current status and progress of a scraping job."
+)
+async def get_scraper_status(
+    job_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get the status of a scraping job."""
+    job = WebScraperService.get_job(job_id)
+    if not job:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Scraping job {job_id} not found"
+        )
+    # Strip internal keys
+    return {k: v for k, v in job.items() if not k.startswith("_")}
+
+
+@router.post(
+    "/scraper/stop/{job_id}",
+    summary="Stop a scraping job",
+    description="Request to stop a running scraping job."
+)
+async def stop_scraper(
+    job_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Stop a running scraping job."""
+    stopped = WebScraperService.stop_job(job_id)
+    if not stopped:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"No active scraping job found with ID {job_id}"
+        )
+    return {
+        "success": True,
+        "message": f"Stop requested for job {job_id}",
+    }
+
+
+@router.get(
+    "/scraper/jobs",
+    summary="List scraping jobs",
+    description="Get a list of past scraping jobs."
+)
+async def list_scraper_jobs(
+    current_user: dict = Depends(get_current_user)
+):
+    """List recent scraping jobs (from memory + DB)."""
+    # Merge in-memory jobs with DB history
+    memory_jobs = WebScraperService.get_all_jobs()
+    memory_ids = {j["job_id"] for j in memory_jobs}
+
+    db_jobs = await load_jobs_from_db(limit=20)
+    # Combine: in-memory jobs take precedence (more up-to-date)
+    combined = [{k: v for k, v in j.items() if not k.startswith("_")} for j in memory_jobs]
+    for dj in db_jobs:
+        if dj.get("job_id") not in memory_ids:
+            combined.append(dj)
+
+    # Sort by started_at descending
+    combined.sort(key=lambda x: x.get("started_at", ""), reverse=True)
+
+    return {
+        "success": True,
+        "jobs": combined[:20],
+    }

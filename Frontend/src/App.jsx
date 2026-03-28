@@ -17,6 +17,7 @@ import {
   UploadDocumentPage,
   DocumentsListPage,
   VectorSearchPage,
+  WebScraperPage,
   AudioPlayerDemo,
 } from './pages';
 import { AdminLayout } from './components/layouts';
@@ -97,6 +98,7 @@ function App() {
           <Route path="upload" element={<UploadDocumentPage />} />
           <Route path="documents" element={<DocumentsListPage />} />
           <Route path="search" element={<VectorSearchPage />} />
+          <Route path="scraper" element={<WebScraperPage />} />
         </Route>
 
         {/* Chat Route */}

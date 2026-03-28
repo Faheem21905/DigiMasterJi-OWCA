@@ -21,7 +21,8 @@ export {
   AdminDashboardPage,
   UploadDocumentPage,
   DocumentsListPage,
-  VectorSearchPage
+  VectorSearchPage,
+  WebScraperPage
 } from './admin';
 
 // Demo Pages (for development/testing)
