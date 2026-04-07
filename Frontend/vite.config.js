@@ -10,7 +10,7 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'robots.txt', 'pwa-192x192.png', 'pwa-512x512.png'],
+      includeAssets: ['favicon.ico', 'robots.txt', 'pwa-192x192.png', 'pwa-512x512.png', 'logo.jpeg'],
       manifest: {
         name: 'DigiMasterJi AI Tutor',
         short_name: 'DigiMasterJi',
@@ -40,8 +40,8 @@ export default defineConfig({
         ]
       },
       workbox: {
-        // Cache all assets
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
+        // Cache all assets including images
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,jpg,jpeg,woff,woff2}'],
         // Increase max file size for caching (WebLLM library is large)
         maximumFileSizeToCacheInBytes: 10 * 1024 * 1024, // 10MB
         // Runtime caching for API calls - network first
