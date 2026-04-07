@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Phone, Mail, ArrowRight, Smartphone, Lock, User } from 'lucide-react';
+import { Phone, Mail, ArrowRight, Smartphone, Lock, AlertCircle } from 'lucide-react';
 import { AuthLayout } from '../../components/layouts';
 import { Button, Input, OtpInput, Card } from '../../components/ui';
 import { authApi } from '../../api/auth';
@@ -100,57 +100,69 @@ export default function LoginPage() {
 
   return (
     <AuthLayout>
-      <Card className="p-8">
+      <Card variant="glass" className="p-8 backdrop-blur-2xl">
         {/* Header */}
-        <div className="text-center mb-8">
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center mb-8"
+        >
           <h2 className="text-2xl font-bold text-white mb-2">Welcome Back!</h2>
-          <p className="text-white/60">Sign in to continue your learning journey</p>
-        </div>
+          <p className="text-white/50">Sign in to continue your learning journey</p>
+        </motion.div>
 
         {/* Auth Method Toggle */}
-        <div className="flex gap-2 p-1 bg-white/5 rounded-xl mb-6">
-          <button
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.1 }}
+          className="flex gap-2 p-1.5 bg-white/[0.03] rounded-xl mb-6 border border-white/[0.06]"
+        >
+          <motion.button
             onClick={() => {
               setAuthMethod('phone');
               setStep('input');
               setError('');
             }}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg font-medium transition-all duration-200 ${
-              authMethod === 'phone'
-                ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-lg'
-                : 'text-white/60 hover:text-white'
-            }`}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg font-medium transition-all duration-300 ${authMethod === 'phone'
+              ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-500/25'
+              : 'text-white/50 hover:text-white hover:bg-white/[0.05]'
+              }`}
           >
             <Phone className="w-4 h-4" />
             Phone
-          </button>
-          <button
+          </motion.button>
+          <motion.button
             onClick={() => {
               setAuthMethod('email');
               setStep('input');
               setError('');
             }}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg font-medium transition-all duration-200 ${
-              authMethod === 'email'
-                ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-lg'
-                : 'text-white/60 hover:text-white'
-            }`}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg font-medium transition-all duration-300 ${authMethod === 'email'
+              ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-500/25'
+              : 'text-white/50 hover:text-white hover:bg-white/[0.05]'
+              }`}
           >
             <Mail className="w-4 h-4" />
             Email
-          </button>
-        </div>
+          </motion.button>
+        </motion.div>
 
         {/* Error Message */}
         <AnimatePresence mode="wait">
           {error && (
             <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="mb-4 p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl"
+              initial={{ opacity: 0, y: -10, height: 0 }}
+              animate={{ opacity: 1, y: 0, height: 'auto' }}
+              exit={{ opacity: 0, y: -10, height: 0 }}
+              className="mb-4 p-4 bg-rose-500/10 border border-rose-500/20 rounded-xl flex items-start gap-3"
             >
-              <p className="text-sm text-rose-400 text-center">{error}</p>
+              <AlertCircle className="w-5 h-5 text-rose-400 flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-rose-400">{error}</p>
             </motion.div>
           )}
         </AnimatePresence>
@@ -164,6 +176,7 @@ export default function LoginPage() {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 20 }}
+                transition={{ duration: 0.3 }}
                 onSubmit={handleSendOtp}
                 className="space-y-6"
               >
@@ -178,7 +191,7 @@ export default function LoginPage() {
                 />
                 <Button
                   type="submit"
-                  className="w-full"
+                  fullWidth
                   loading={loading}
                   icon={ArrowRight}
                   iconPosition="right"
@@ -192,14 +205,15 @@ export default function LoginPage() {
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.3 }}
                 onSubmit={handleVerifyOtp}
                 className="space-y-6"
               >
                 <div className="text-center mb-4">
-                  <p className="text-white/60 text-sm">
+                  <p className="text-white/50 text-sm">
                     Enter the 6-digit code sent to
                   </p>
-                  <p className="text-white font-semibold">+91 {phone}</p>
+                  <p className="text-white font-semibold mt-1">+91 {phone}</p>
                 </div>
                 <OtpInput
                   length={6}
@@ -209,24 +223,26 @@ export default function LoginPage() {
                 />
                 <Button
                   type="submit"
-                  className="w-full"
+                  fullWidth
                   loading={loading}
                   icon={ArrowRight}
                   iconPosition="right"
                 >
                   Verify & Login
                 </Button>
-                <button
+                <motion.button
                   type="button"
                   onClick={() => {
                     setStep('input');
                     setOtp('');
                     setError('');
                   }}
-                  className="w-full text-sm text-white/60 hover:text-white transition-colors"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="w-full text-sm text-white/50 hover:text-white transition-colors py-2"
                 >
                   Change phone number
-                </button>
+                </motion.button>
               </motion.form>
             )
           ) : (
@@ -235,6 +251,7 @@ export default function LoginPage() {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.3 }}
               onSubmit={handleEmailLogin}
               className="space-y-6"
             >
@@ -258,7 +275,7 @@ export default function LoginPage() {
               />
               <Button
                 type="submit"
-                className="w-full"
+                fullWidth
                 loading={loading}
                 icon={ArrowRight}
                 iconPosition="right"
@@ -270,17 +287,22 @@ export default function LoginPage() {
         </AnimatePresence>
 
         {/* Footer */}
-        <div className="mt-8 pt-6 border-t border-white/10 text-center">
-          <p className="text-white/60">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3 }}
+          className="mt-8 pt-6 border-t border-white/[0.06] text-center"
+        >
+          <p className="text-white/50">
             Don't have an account?{' '}
             <Link
               to="/register"
-              className="text-violet-400 hover:text-violet-300 font-semibold transition-colors"
+              className="text-orange-400 hover:text-orange-300 font-semibold transition-colors"
             >
               Sign Up
             </Link>
           </p>
-        </div>
+        </motion.div>
       </Card>
     </AuthLayout>
   );

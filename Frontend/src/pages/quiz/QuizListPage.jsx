@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Trophy, 
-  Flame, 
-  Star, 
-  Clock, 
-  ChevronRight, 
-  Sparkles, 
+import {
+  Trophy,
+  Flame,
+  Star,
+  Clock,
+  ChevronRight,
+  Sparkles,
   BookOpen,
   ArrowLeft,
   RefreshCw,
@@ -29,7 +29,7 @@ import { quizzesApi } from '../../api/quizzes';
 export default function QuizListPage() {
   const navigate = useNavigate();
   const { activeProfile, isProfileSessionValid } = useProfile();
-  
+
   const [pendingQuizzes, setPendingQuizzes] = useState([]);
   const [todayQuiz, setTodayQuiz] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -95,7 +95,7 @@ export default function QuizListPage() {
     today.setHours(0, 0, 0, 0);
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
-    
+
     if (quizDate.toDateString() === today.toDateString()) {
       return 'Today';
     } else if (quizDate.toDateString() === yesterday.toDateString()) {
@@ -127,11 +127,12 @@ export default function QuizListPage() {
   const xpProgress = (gamification.xp % 100);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-violet-950 to-slate-900 overflow-y-auto">
+    <div className="min-h-screen bg-[#050816] overflow-y-auto">
       {/* Animated Background */}
       <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(120,119,198,0.15),transparent_50%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(251,146,60,0.1),transparent_50%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(249,115,22,0.08),transparent_50%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(34,211,238,0.06),transparent_50%)]" />
+        <div className="absolute inset-0 bg-grid-pattern opacity-30" />
       </div>
 
       <div className="relative z-10 max-w-4xl mx-auto px-4 py-6 pb-24">
@@ -175,7 +176,10 @@ export default function QuizListPage() {
           className="grid grid-cols-3 gap-3 mb-8"
         >
           {/* Streak Card */}
-          <div className="bg-gradient-to-br from-orange-500/20 to-amber-500/10 backdrop-blur-xl border border-orange-500/20 rounded-2xl p-4 text-center">
+          <motion.div
+            whileHover={{ scale: 1.02, y: -2 }}
+            className="glass-card border-orange-500/20 p-4 text-center"
+          >
             <motion.div
               animate={{ scale: [1, 1.1, 1] }}
               transition={{ duration: 2, repeat: Infinity }}
@@ -185,21 +189,27 @@ export default function QuizListPage() {
             </motion.div>
             <div className="text-2xl font-bold text-orange-400">{gamification.current_streak_days}</div>
             <div className="text-xs text-white/50">Day Streak</div>
-          </div>
+          </motion.div>
 
           {/* XP Card */}
-          <div className="bg-gradient-to-br from-violet-500/20 to-indigo-500/10 backdrop-blur-xl border border-violet-500/20 rounded-2xl p-4 text-center">
+          <motion.div
+            whileHover={{ scale: 1.02, y: -2 }}
+            className="glass-card border-cyan-500/20 p-4 text-center"
+          >
             <div className="text-3xl mb-1">⚡</div>
-            <div className="text-2xl font-bold text-violet-400">{gamification.xp}</div>
+            <div className="text-2xl font-bold text-cyan-400">{gamification.xp}</div>
             <div className="text-xs text-white/50">Total XP</div>
-          </div>
+          </motion.div>
 
           {/* Level Card */}
-          <div className="bg-gradient-to-br from-emerald-500/20 to-teal-500/10 backdrop-blur-xl border border-emerald-500/20 rounded-2xl p-4 text-center">
+          <motion.div
+            whileHover={{ scale: 1.02, y: -2 }}
+            className="glass-card border-emerald-500/20 p-4 text-center"
+          >
             <div className="text-3xl mb-1">🏆</div>
             <div className="text-2xl font-bold text-emerald-400">Lvl {currentLevel}</div>
             <div className="text-xs text-white/50">{100 - xpProgress} XP to next</div>
-          </div>
+          </motion.div>
         </motion.div>
 
         {/* Today's Quiz Section */}
@@ -210,14 +220,14 @@ export default function QuizListPage() {
           className="mb-8"
         >
           <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-            <Calendar className="w-5 h-5 text-violet-400" />
+            <Calendar className="w-5 h-5 text-orange-400" />
             Today's Quiz
           </h2>
 
           {loading ? (
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8">
+            <div className="glass-card p-8">
               <div className="flex flex-col items-center justify-center">
-                <div className="w-12 h-12 border-4 border-violet-500/30 border-t-violet-500 rounded-full animate-spin mb-4" />
+                <div className="w-12 h-12 border-4 border-orange-500/30 border-t-orange-500 rounded-full animate-spin mb-4" />
                 <p className="text-white/50">Loading today's quiz...</p>
               </div>
             </div>
@@ -225,25 +235,25 @@ export default function QuizListPage() {
             <motion.div
               whileHover={{ scale: 1.01 }}
               className={`
-                relative overflow-hidden rounded-2xl p-6 cursor-pointer
-                ${todayQuiz.status === 'completed' 
-                  ? 'bg-gradient-to-br from-emerald-500/20 to-teal-500/10 border border-emerald-500/30' 
-                  : 'bg-gradient-to-br from-violet-500/20 to-indigo-500/10 border border-violet-500/30'
+                relative overflow-hidden rounded-2xl p-6 cursor-pointer backdrop-blur-xl
+                ${todayQuiz.status === 'completed'
+                  ? 'bg-emerald-500/10 border border-emerald-500/30'
+                  : 'bg-orange-500/10 border border-orange-500/30'
                 }
               `}
               onClick={() => todayQuiz.status !== 'completed' && handleStartQuiz(todayQuiz)}
             >
               {/* Decorative sparkles */}
               <div className="absolute top-4 right-4">
-                <Sparkles className="w-6 h-6 text-violet-400/50" />
+                <Sparkles className="w-6 h-6 text-orange-400/50" />
               </div>
 
               <div className="flex items-start gap-4">
                 <div className={`
                   w-14 h-14 rounded-2xl flex items-center justify-center
-                  ${todayQuiz.status === 'completed' 
-                    ? 'bg-emerald-500' 
-                    : 'bg-gradient-to-br from-violet-500 to-indigo-600'
+                  ${todayQuiz.status === 'completed'
+                    ? 'bg-emerald-500'
+                    : 'bg-gradient-to-br from-orange-500 to-amber-600'
                   }
                 `}>
                   {todayQuiz.status === 'completed' ? (
@@ -275,7 +285,7 @@ export default function QuizListPage() {
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Zap className="w-4 h-4 text-violet-400" />
+                        <Zap className="w-4 h-4 text-cyan-400" />
                         <span className="text-sm text-white/80">
                           +{todayQuiz.xp_earned} XP
                         </span>
@@ -283,7 +293,7 @@ export default function QuizListPage() {
                     </div>
                   ) : (
                     <Button
-                      variant="primary"
+                      variant="glow"
                       size="sm"
                       icon={ChevronRight}
                       iconPosition="right"
@@ -295,7 +305,7 @@ export default function QuizListPage() {
               </div>
             </motion.div>
           ) : (
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 text-center">
+            <div className="glass-card p-8 text-center">
               <motion.div
                 animate={{ y: [0, -5, 0] }}
                 transition={{ duration: 2, repeat: Infinity }}
@@ -330,58 +340,57 @@ export default function QuizListPage() {
               {pendingQuizzes.map((quiz, index) => {
                 const isMissedQuiz = quiz.is_backlog || (quiz.quiz_date && new Date(quiz.quiz_date).toDateString() !== new Date().toDateString());
                 return (
-                <motion.div
-                  key={quiz._id || quiz.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.1 * index }}
-                  whileHover={{ scale: 1.01, x: 4 }}
-                  onClick={() => handleStartQuiz(quiz)}
-                  className={`backdrop-blur-xl rounded-2xl p-4 cursor-pointer transition-all ${
-                    isMissedQuiz 
-                      ? 'bg-orange-500/10 border border-orange-500/20 hover:border-orange-500/40' 
-                      : 'bg-white/5 border border-white/10 hover:border-violet-500/30'
-                  }`}
-                >
-                  <div className="flex items-center gap-4">
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                      isMissedQuiz 
-                        ? 'bg-gradient-to-br from-orange-400 to-red-500' 
-                        : 'bg-gradient-to-br from-amber-400 to-orange-500'
-                    }`}>
-                      <Trophy className="w-6 h-6 text-white" />
-                    </div>
-                    
-                    <div className="flex-1">
-                      <h3 className="font-medium text-white flex items-center gap-2">
-                        {quiz.topic}
-                        {isMissedQuiz && (
-                          <span className="px-2 py-0.5 text-xs bg-orange-500/20 text-orange-400 rounded-full">
-                            Missed
-                          </span>
-                        )}
-                      </h3>
-                      <div className="flex items-center gap-2 text-sm text-white/50">
-                        <span className="flex items-center gap-1">
-                          <Calendar className="w-3 h-3" />
-                          {formatQuizDate(quiz.quiz_date)}
-                        </span>
-                        <span>•</span>
-                        <span>{quiz.total_questions} questions</span>
-                        <span>•</span>
-                        <span>{quiz.difficulty}</span>
+                  <motion.div
+                    key={quiz._id || quiz.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.1 * index }}
+                    whileHover={{ scale: 1.01, x: 4 }}
+                    onClick={() => handleStartQuiz(quiz)}
+                    className={`glass-card p-4 cursor-pointer transition-all ${isMissedQuiz
+                      ? 'border-orange-500/30 hover:border-orange-500/50'
+                      : 'hover:border-cyan-500/30'
+                      }`}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${isMissedQuiz
+                        ? 'bg-gradient-to-br from-orange-400 to-red-500'
+                        : 'bg-gradient-to-br from-cyan-400 to-blue-500'
+                        }`}>
+                        <Trophy className="w-6 h-6 text-white" />
                       </div>
-                      {isMissedQuiz && (
-                        <p className="text-xs text-orange-400/70 mt-1">
-                          Won't affect streak
-                        </p>
-                      )}
-                    </div>
 
-                    <ChevronRight className="w-5 h-5 text-white/40" />
-                  </div>
-                </motion.div>
-                );})}
+                      <div className="flex-1">
+                        <h3 className="font-medium text-white flex items-center gap-2">
+                          {quiz.topic}
+                          {isMissedQuiz && (
+                            <span className="px-2 py-0.5 text-xs bg-orange-500/20 text-orange-400 rounded-full">
+                              Missed
+                            </span>
+                          )}
+                        </h3>
+                        <div className="flex items-center gap-2 text-sm text-white/50">
+                          <span className="flex items-center gap-1">
+                            <Calendar className="w-3 h-3" />
+                            {formatQuizDate(quiz.quiz_date)}
+                          </span>
+                          <span>•</span>
+                          <span>{quiz.total_questions} questions</span>
+                          <span>•</span>
+                          <span>{quiz.difficulty}</span>
+                        </div>
+                        {isMissedQuiz && (
+                          <p className="text-xs text-orange-400/70 mt-1">
+                            Won't affect streak
+                          </p>
+                        )}
+                      </div>
+
+                      <ChevronRight className="w-5 h-5 text-white/40" />
+                    </div>
+                  </motion.div>
+                );
+              })}
             </div>
           </motion.div>
         )}
@@ -405,13 +414,15 @@ export default function QuizListPage() {
           transition={{ delay: 0.4 }}
           className="mt-6"
         >
-          <button
+          <motion.button
+            whileHover={{ scale: 1.01 }}
+            whileTap={{ scale: 0.99 }}
             onClick={() => navigate('/quiz/revision')}
-            className="w-full bg-gradient-to-r from-indigo-500/10 to-violet-500/10 hover:from-indigo-500/20 hover:to-violet-500/20 backdrop-blur-xl border border-indigo-500/20 rounded-2xl p-4 transition-all"
+            className="w-full glass-card hover:border-cyan-500/30 p-4 transition-all"
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
                   <History className="w-6 h-6 text-white" />
                 </div>
                 <div className="text-left">
@@ -421,7 +432,7 @@ export default function QuizListPage() {
               </div>
               <ChevronRight className="w-5 h-5 text-white/40" />
             </div>
-          </button>
+          </motion.button>
         </motion.div>
 
         {/* Motivational Section */}
@@ -429,7 +440,7 @@ export default function QuizListPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
-          className="mt-8 bg-gradient-to-r from-violet-500/10 to-indigo-500/10 backdrop-blur-xl border border-violet-500/20 rounded-2xl p-6 text-center"
+          className="mt-8 glass-card border-orange-500/20 p-6 text-center"
         >
           <motion.div
             animate={{ rotate: [0, 10, -10, 0] }}

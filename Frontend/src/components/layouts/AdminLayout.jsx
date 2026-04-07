@@ -48,8 +48,8 @@ export default function AdminLayout() {
         flex items-center gap-3 px-4 py-3 rounded-xl
         transition-all duration-200 group
         ${isActive
-          ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-lg shadow-violet-500/25'
-          : 'text-white/60 hover:text-white hover:bg-white/10'
+          ? 'bg-gradient-to-r from-orange-500 to-amber-600 text-white shadow-lg shadow-orange-500/25'
+          : 'text-white/60 hover:text-white hover:bg-white/[0.05]'
         }
       `}
     >
@@ -70,33 +70,35 @@ export default function AdminLayout() {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-violet-950 to-slate-950 flex">
+    <div className="min-h-screen bg-[#050816] flex">
       {/* Animated Background */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(249,115,22,0.08),transparent_50%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(34,211,238,0.06),transparent_50%)]" />
+        <div className="absolute inset-0 bg-grid-pattern opacity-30" />
         <motion.div
           animate={{ x: [0, 100, 0], y: [0, -50, 0] }}
           transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
-          className="absolute -top-40 -left-40 w-[500px] h-[500px] bg-violet-600/10 rounded-full blur-3xl"
+          className="absolute -top-40 -left-40 w-[500px] h-[500px] bg-orange-500/5 rounded-full blur-3xl"
         />
         <motion.div
           animate={{ x: [0, -50, 0], y: [0, 100, 0] }}
           transition={{ duration: 25, repeat: Infinity, ease: 'linear' }}
-          className="absolute -bottom-40 -right-40 w-[500px] h-[500px] bg-indigo-600/10 rounded-full blur-3xl"
+          className="absolute -bottom-40 -right-40 w-[500px] h-[500px] bg-cyan-500/5 rounded-full blur-3xl"
         />
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:50px_50px]" />
       </div>
 
       {/* Desktop Sidebar */}
       <motion.aside
         initial={false}
         animate={{ width: sidebarOpen ? 260 : 80 }}
-        className="hidden lg:flex flex-col fixed left-0 top-0 h-screen bg-white/5 backdrop-blur-xl border-r border-white/10 z-40"
+        className="hidden lg:flex flex-col fixed left-0 top-0 h-screen bg-white/[0.02] backdrop-blur-xl border-r border-white/[0.05] z-40"
       >
         {/* Logo */}
-        <div className="p-4 border-b border-white/10">
+        <div className="p-4 border-b border-white/[0.05]">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-violet-500/30 flex-shrink-0">
-              <Sparkles className="w-5 h-5 text-white" />
+            <div className="w-10 h-10 rounded-xl overflow-hidden flex-shrink-0 ring-2 ring-orange-500/30">
+              <img src="/logo.jpeg" alt="DigiMasterJi" className="w-full h-full object-cover" />
             </div>
             <AnimatePresence>
               {sidebarOpen && (
@@ -108,7 +110,7 @@ export default function AdminLayout() {
                 >
                   <div className="flex items-center gap-2">
                     <h1 className="text-lg font-bold text-white whitespace-nowrap">
-                      DigiMaster<span className="text-violet-400">Ji</span>
+                      DigiMaster<span className="text-orange-400">Ji</span>
                     </h1>
                     {/* Network Status Badge - Desktop Sidebar */}
                     <NetworkStatusBadge variant="minimal" size="sm" />
@@ -142,10 +144,10 @@ export default function AdminLayout() {
         </nav>
 
         {/* Bottom Actions */}
-        <div className="p-4 border-t border-white/10 space-y-2">
+        <div className="p-4 border-t border-white/[0.05] space-y-2">
           <button
             onClick={() => navigate('/profiles')}
-            className="flex items-center gap-3 px-4 py-3 rounded-xl w-full text-white/60 hover:text-white hover:bg-white/10 transition-all duration-200"
+            className="flex items-center gap-3 px-4 py-3 rounded-xl w-full text-white/60 hover:text-white hover:bg-white/[0.05] transition-all duration-200"
           >
             <Users className="w-5 h-5 flex-shrink-0" />
             <AnimatePresence>
@@ -184,7 +186,7 @@ export default function AdminLayout() {
         {/* Toggle Button */}
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="absolute -right-3 top-20 w-6 h-6 bg-violet-600 rounded-full flex items-center justify-center shadow-lg hover:bg-violet-500 transition-colors"
+          className="absolute -right-3 top-20 w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center shadow-lg hover:bg-orange-400 transition-colors"
         >
           <ChevronRight className={`w-4 h-4 text-white transition-transform ${sidebarOpen ? 'rotate-180' : ''}`} />
         </button>
@@ -194,16 +196,16 @@ export default function AdminLayout() {
       <header className="lg:hidden fixed top-0 left-0 right-0 z-40">
         {/* Offline Banner */}
         <OfflineBanner />
-        
-        <div className="h-16 bg-white/5 backdrop-blur-xl border-b border-white/10 flex items-center justify-between px-4">
+
+        <div className="h-16 bg-white/[0.02] backdrop-blur-xl border-b border-white/[0.05] flex items-center justify-between px-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-indigo-600 rounded-xl flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-white" />
+            <div className="w-10 h-10 rounded-xl overflow-hidden ring-2 ring-orange-500/30">
+              <img src="/logo.jpeg" alt="DigiMasterJi" className="w-full h-full object-cover" />
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-lg font-bold text-white">
-                  DigiMaster<span className="text-violet-400">Ji</span>
+                  DigiMaster<span className="text-orange-400">Ji</span>
                 </h1>
                 {/* Network Status Badge - Mobile */}
                 <NetworkStatusBadge variant="minimal" size="sm" />
@@ -211,16 +213,18 @@ export default function AdminLayout() {
               <p className="text-xs text-white/50">Admin Portal</p>
             </div>
           </div>
-          <button
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center"
+            className="w-10 h-10 glass rounded-xl flex items-center justify-center"
           >
             {mobileMenuOpen ? (
               <X className="w-5 h-5 text-white" />
             ) : (
               <Menu className="w-5 h-5 text-white" />
             )}
-          </button>
+          </motion.button>
         </div>
       </header>
 
@@ -231,13 +235,13 @@ export default function AdminLayout() {
             initial={{ opacity: 0, x: '100%' }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: '100%' }}
-            className="lg:hidden fixed inset-0 top-16 bg-slate-950/95 backdrop-blur-xl z-30"
+            className="lg:hidden fixed inset-0 top-16 bg-[#050816]/95 backdrop-blur-xl z-30"
           >
             <nav className="p-4 space-y-2">
               {navItems.map((item) => (
                 <NavItem key={item.path} item={item} mobile />
               ))}
-              <hr className="border-white/10 my-4" />
+              <hr className="border-white/[0.05] my-4" />
               <button
                 onClick={() => {
                   setMobileMenuOpen(false);

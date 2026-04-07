@@ -5,7 +5,6 @@ import {
   Menu,
   X,
   ArrowLeft,
-  Sparkles,
   User,
   AlertCircle,
   RefreshCw,
@@ -14,6 +13,7 @@ import {
   Wifi,
   WifiOff,
   Download,
+  Zap,
 } from 'lucide-react';
 import { ChatSidebar, ChatWindow } from '../../components/chat';
 import { NetworkStatusBadge, OfflineBanner, LowBandwidthToggle, useLowBandwidthMode } from '../../components/ui';
@@ -220,29 +220,30 @@ export default function ChatPage() {
   // Show loading until session is checked
   if (!sessionChecked) {
     return (
-      <div className="h-screen bg-gradient-to-br from-slate-950 via-violet-950 to-slate-950 flex items-center justify-center">
+      <div className="h-screen bg-[#050816] flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-violet-500/30 border-t-violet-500 rounded-full animate-spin" />
-          <p className="text-white/60">Loading...</p>
+          <div className="w-12 h-12 border-4 border-orange-500/30 border-t-orange-500 rounded-full animate-spin" />
+          <p className="text-white/50">Loading...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="h-screen bg-gradient-to-br from-slate-950 via-violet-950 to-slate-950 flex overflow-hidden">
+    <div className="h-screen bg-[#050816] flex overflow-hidden">
       {/* Animated Background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <motion.div
-          animate={{ x: [0, 50, 0], y: [0, -30, 0] }}
+          animate={{ x: [0, 50, 0], y: [0, -30, 0], scale: [1, 1.1, 1] }}
           transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
-          className="absolute -top-40 -left-40 w-[400px] h-[400px] bg-violet-600/10 rounded-full blur-3xl"
+          className="absolute -top-40 -left-40 w-[500px] h-[500px] bg-orange-500/5 rounded-full blur-[120px]"
         />
         <motion.div
-          animate={{ x: [0, -30, 0], y: [0, 50, 0] }}
+          animate={{ x: [0, -30, 0], y: [0, 50, 0], scale: [1, 1.2, 1] }}
           transition={{ duration: 25, repeat: Infinity, ease: 'linear' }}
-          className="absolute -bottom-40 -right-40 w-[400px] h-[400px] bg-indigo-600/10 rounded-full blur-3xl"
+          className="absolute -bottom-40 -right-40 w-[500px] h-[500px] bg-cyan-500/5 rounded-full blur-[120px]"
         />
+        <div className="absolute inset-0 bg-grid-pattern opacity-10" />
       </div>
 
       {/* Mobile Header */}
@@ -250,17 +251,19 @@ export default function ChatPage() {
         {/* Offline Banner - Shows when offline or syncing */}
         <OfflineBanner />
 
-        <div className="flex items-center justify-between p-4 bg-slate-950/80 backdrop-blur-sm border-b border-white/10">
+        <div className="flex items-center justify-between p-4 bg-[#050816]/90 backdrop-blur-xl border-b border-white/[0.05]">
           <button
             onClick={() => setIsMobileSidebarOpen(true)}
-            className="p-2 rounded-xl bg-white/10 text-white"
+            className="p-2 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] text-white transition-colors"
           >
             <Menu className="w-5 h-5" />
           </button>
 
           <div className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-violet-400" />
-            <span className="font-semibold text-white">DigiMasterJi</span>
+            <div className="w-8 h-8 rounded-lg overflow-hidden">
+              <img src="/logo.jpeg" alt="DigiMasterJi" className="w-full h-full object-cover" />
+            </div>
+            <span className="font-semibold text-white">DigiMaster<span className="text-orange-400">Ji</span></span>
             {/* Offline Model Indicator - Mobile */}
             {isUsingOfflineModel && (
               <motion.div
@@ -280,7 +283,7 @@ export default function ChatPage() {
             {/* Quiz Button - Mobile */}
             <button
               onClick={() => navigate('/quiz')}
-              className="p-2 rounded-xl bg-violet-500/20 text-violet-400 hover:bg-violet-500/30 transition-colors"
+              className="p-2 rounded-xl bg-orange-500/20 text-orange-400 hover:bg-orange-500/30 transition-colors"
               title="Daily Quiz"
             >
               <BookOpen className="w-5 h-5" />
@@ -289,7 +292,7 @@ export default function ChatPage() {
             {/* Progress Button - Mobile */}
             <button
               onClick={() => navigate('/progress')}
-              className="p-2 rounded-xl bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 transition-colors"
+              className="p-2 rounded-xl bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30 transition-colors"
               title="My Progress"
             >
               <Trophy className="w-5 h-5" />
@@ -300,7 +303,7 @@ export default function ChatPage() {
 
             <button
               onClick={handleBackToProfiles}
-              className="p-2 rounded-xl bg-white/10 text-white"
+              className="p-2 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] text-white transition-colors"
             >
               <User className="w-5 h-5" />
             </button>
@@ -317,7 +320,7 @@ export default function ChatPage() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsMobileSidebarOpen(false)}
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden"
+              className="fixed inset-0 bg-black/70 backdrop-blur-sm z-40 lg:hidden"
             />
             <motion.div
               initial={{ x: -280 }}
@@ -329,7 +332,7 @@ export default function ChatPage() {
               <div className="relative h-full">
                 <button
                   onClick={() => setIsMobileSidebarOpen(false)}
-                  className="absolute top-4 right-4 p-2 rounded-xl bg-white/10 text-white z-10"
+                  className="absolute top-4 right-4 p-2 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] text-white z-10 transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -370,41 +373,45 @@ export default function ChatPage() {
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="absolute top-16 lg:top-0 left-0 right-0 z-20 p-3 bg-red-500/20 border-b border-red-500/30 backdrop-blur-sm"
+              className="absolute top-16 lg:top-0 left-0 right-0 z-20 p-3 bg-rose-500/20 border-b border-rose-500/30 backdrop-blur-xl"
             >
               <div className="flex items-center justify-between max-w-4xl mx-auto">
-                <div className="flex items-center gap-2 text-red-200">
+                <div className="flex items-center gap-2 text-rose-200">
                   <AlertCircle className="w-4 h-4" />
                   <span className="text-sm">{error}</span>
                 </div>
-                <button
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                   onClick={handleRetry}
-                  className="flex items-center gap-1 px-3 py-1 rounded-lg bg-red-500/30 hover:bg-red-500/50 text-red-200 text-sm transition-colors"
+                  className="flex items-center gap-1 px-3 py-1 rounded-lg bg-rose-500/30 hover:bg-rose-500/50 text-rose-200 text-sm transition-colors"
                 >
                   <RefreshCw className="w-3 h-3" />
                   Retry
-                </button>
+                </motion.button>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
 
         {/* Desktop Header */}
-        <div className="hidden lg:flex items-center justify-between px-6 py-4 border-b border-white/10 bg-white/5 backdrop-blur-sm">
+        <div className="hidden lg:flex items-center justify-between px-6 py-4 border-b border-white/[0.05] bg-white/[0.02] backdrop-blur-xl">
           <div className="flex items-center gap-3">
-            <button
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               onClick={handleBackToProfiles}
-              className="p-2 rounded-xl hover:bg-white/10 transition-colors"
+              className="p-2 rounded-xl hover:bg-white/[0.05] transition-colors"
             >
-              <ArrowLeft className="w-5 h-5 text-white/60" />
-            </button>
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center">
-                <Sparkles className="w-4 h-4 text-white" />
+              <ArrowLeft className="w-5 h-5 text-white/50" />
+            </motion.button>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl overflow-hidden shadow-lg">
+                <img src="/logo.jpeg" alt="DigiMasterJi" className="w-full h-full object-cover" />
               </div>
               <div>
-                <h1 className="font-semibold text-white">DigiMasterJi</h1>
-                <p className="text-xs text-white/50">AI Tutor</p>
+                <h1 className="font-semibold text-white">DigiMaster<span className="text-orange-400">Ji</span></h1>
+                <p className="text-xs text-white/40">AI Tutor</p>
               </div>
             </div>
             {/* Network Status Badge - Desktop */}
@@ -448,10 +455,10 @@ export default function ChatPage() {
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-violet-500/20 border border-violet-500/30"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cyan-500/20 border border-cyan-500/30"
               >
-                <Download className="w-4 h-4 text-violet-400 animate-pulse" />
-                <span className="text-sm font-medium text-violet-400">Loading Model...</span>
+                <Download className="w-4 h-4 text-cyan-400 animate-pulse" />
+                <span className="text-sm font-medium text-cyan-400">Loading Model...</span>
               </motion.div>
             )}
           </div>
@@ -459,33 +466,39 @@ export default function ChatPage() {
           {activeProfile && (
             <div className="flex items-center gap-4">
               {/* Quiz Button - Desktop */}
-              <button
+              <motion.button
+                whileHover={{ scale: 1.05, y: -1 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={() => navigate('/quiz')}
-                className="flex items-center gap-2 px-3 py-2 rounded-xl bg-violet-500/20 text-violet-400 hover:bg-violet-500/30 transition-colors"
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-orange-500/20 text-orange-400 hover:bg-orange-500/30 transition-colors border border-orange-500/20"
                 title="Daily Quiz"
               >
                 <BookOpen className="w-4 h-4" />
                 <span className="text-sm font-medium">Quiz</span>
-              </button>
+              </motion.button>
 
               {/* Progress Button - Desktop */}
-              <button
+              <motion.button
+                whileHover={{ scale: 1.05, y: -1 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={() => navigate('/progress')}
-                className="flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 transition-colors"
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30 transition-colors border border-cyan-500/20"
                 title="My Progress"
               >
                 <Trophy className="w-4 h-4" />
                 <span className="text-sm font-medium">Progress</span>
-              </button>
+              </motion.button>
 
               {/* Low Bandwidth Toggle - Desktop */}
               <LowBandwidthToggle size="md" showTooltip={true} />
 
-              <span className="text-sm text-white/60">
-                Learning as <span className="text-violet-400 font-medium">{activeProfile.name}</span>
-              </span>
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center">
-                <span className="text-sm">🦊</span>
+              <div className="flex items-center gap-3 pl-4 border-l border-white/[0.08]">
+                <span className="text-sm text-white/50">
+                  Learning as <span className="text-orange-400 font-medium">{activeProfile.name}</span>
+                </span>
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center shadow-lg shadow-orange-500/30">
+                  <span className="text-sm">🦊</span>
+                </div>
               </div>
             </div>
           )}

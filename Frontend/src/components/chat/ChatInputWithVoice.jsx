@@ -137,20 +137,20 @@ export default function ChatInput({
             animate={{ opacity: 1, y: 0 }}
             className="absolute -top-16 left-0 right-0 mx-4"
           >
-            <div className="flex items-center gap-2 px-4 py-2 bg-red-500/20 border border-red-500/30 rounded-xl text-red-400 text-sm">
+            <div className="flex items-center gap-2 px-4 py-2 bg-rose-500/20 border border-rose-500/30 rounded-xl text-rose-400 text-sm">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
               <span>{recordingError}</span>
             </div>
           </motion.div>
         )}
 
-        <div className="flex items-center gap-3 p-4 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl">
+        <div className="flex items-center gap-3 p-4 bg-white/[0.03] backdrop-blur-xl border border-white/[0.08] rounded-2xl">
           {/* Cancel Button */}
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={handleCancelRecording}
-            className="p-2.5 rounded-xl bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-all"
+            className="p-2.5 rounded-xl bg-rose-500/20 text-rose-400 hover:bg-rose-500/30 transition-all border border-rose-500/20"
             title="Cancel recording"
           >
             <X className="w-5 h-5" />
@@ -164,7 +164,7 @@ export default function ChatInput({
                 <motion.div
                   animate={{ scale: [1, 1.2, 1], opacity: [1, 0.7, 1] }}
                   transition={{ duration: 1, repeat: Infinity }}
-                  className="w-3 h-3 rounded-full bg-red-500"
+                  className="w-3 h-3 rounded-full bg-rose-500"
                 />
 
                 {/* Audio Level Bars */}
@@ -172,7 +172,7 @@ export default function ChatInput({
                   {[...Array(20)].map((_, i) => (
                     <motion.div
                       key={i}
-                      className="w-1 bg-violet-500 rounded-full"
+                      className="w-1 bg-orange-400 rounded-full"
                       animate={{
                         height: audioLevel > (i * 5) ? `${Math.min(32, 8 + audioLevel * 0.25)}px` : '4px',
                         opacity: audioLevel > (i * 5) ? 1 : 0.3,
@@ -183,12 +183,12 @@ export default function ChatInput({
                 </div>
 
                 {/* Timer */}
-                <span className="text-white/80 font-mono text-sm min-w-[50px]">
+                <span className="text-white/70 font-mono text-sm min-w-[50px]">
                   {formattedTime}
                 </span>
               </>
             ) : (
-              <span className="text-white/60 text-sm">
+              <span className="text-white/50 text-sm">
                 Processing audio...
               </span>
             )}
@@ -200,7 +200,7 @@ export default function ChatInput({
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={stopRecording}
-              className="p-3 rounded-xl bg-gradient-to-r from-red-500 to-pink-500 text-white shadow-lg shadow-red-500/30"
+              className="p-3 rounded-xl bg-gradient-to-r from-rose-500 to-pink-500 text-white shadow-lg shadow-rose-500/30"
               title="Stop recording"
             >
               <Square className="w-5 h-5 fill-current" />
@@ -211,13 +211,13 @@ export default function ChatInput({
               whileTap={{ scale: 0.95 }}
               onClick={handleSendVoice}
               disabled={disabled}
-              className="p-3 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-lg shadow-violet-500/30 disabled:opacity-50"
+              className="p-3 rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-500/30 disabled:opacity-50"
               title="Send voice message"
             >
               <Send className="w-5 h-5" />
             </motion.button>
           ) : (
-            <Loader2 className="w-5 h-5 text-white/50 animate-spin" />
+            <Loader2 className="w-5 h-5 text-white/40 animate-spin" />
           )}
         </div>
       </motion.div>
@@ -276,19 +276,19 @@ export default function ChatInput({
       {/* Gradient Border Effect */}
       <div className={`
         absolute -inset-0.5 rounded-2xl
-        bg-gradient-to-r from-violet-600 via-indigo-600 to-violet-600
+        bg-gradient-to-r from-orange-500 via-amber-500 to-orange-500
         opacity-0 blur transition-opacity duration-300
-        ${isFocused ? 'opacity-50' : ''}
+        ${isFocused ? 'opacity-30' : ''}
       `} />
 
       <form
         onSubmit={handleSubmit}
         className={`
           relative flex items-end gap-2 p-3
-          bg-white/5 backdrop-blur-xl
-          border border-white/10 rounded-2xl
+          bg-white/[0.03] backdrop-blur-xl
+          border border-white/[0.08] rounded-2xl
           transition-all duration-300
-          ${isFocused ? 'border-violet-500/50 bg-white/10' : ''}
+          ${isFocused ? 'border-orange-500/30 bg-white/[0.05]' : ''}
           ${((isOffline && !isOfflineModelReady) || isDataSaverMode) ? 'opacity-60 cursor-not-allowed' : ''}
         `}
       >
@@ -305,10 +305,10 @@ export default function ChatInput({
               flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium
               transition-all duration-200
               ${(isDataSaverMode || isOffline)
-                ? 'bg-white/5 text-white/20 cursor-not-allowed'
+                ? 'bg-white/[0.02] text-white/20 cursor-not-allowed'
                 : webSearchEnabled
-                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                  : 'bg-white/5 text-white/50 border border-white/10 hover:bg-white/10 hover:text-white/70'
+                  ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30'
+                  : 'bg-white/[0.03] text-white/40 border border-white/[0.08] hover:bg-white/[0.06] hover:text-white/60'
               }
             `}
             title={isOffline ? 'Unavailable offline' : isDataSaverMode ? 'Disabled in Data Saver mode' : webSearchEnabled ? 'Web search enabled' : 'Enable web search'}
@@ -337,10 +337,10 @@ export default function ChatInput({
           className={`
             p-2 rounded-xl transition-all
             ${(isDataSaverMode || isOffline)
-              ? 'bg-white/5 text-white/20 cursor-not-allowed'
+              ? 'bg-white/[0.02] text-white/20 cursor-not-allowed'
               : ttsEnabled
-                ? 'bg-emerald-500/20 text-emerald-400'
-                : 'bg-white/10 text-white/40 hover:text-white/60'
+                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/20'
+                : 'bg-white/[0.05] text-white/30 hover:text-white/50 border border-transparent'
             }
           `}
           title={isOffline ? 'Voice unavailable offline' : isDataSaverMode ? 'Disabled in Data Saver mode' : ttsEnabled ? 'Voice responses ON' : 'Voice responses OFF'}
@@ -360,7 +360,7 @@ export default function ChatInput({
             disabled={disabled || isDataSaverMode}
             rows={1}
             className="
-              w-full bg-transparent text-white placeholder-white/40
+              w-full bg-transparent text-white placeholder-white/30
               resize-none outline-none
               text-sm sm:text-base
               max-h-32 scrollbar-thin scrollbar-thumb-white/20
@@ -388,8 +388,8 @@ export default function ChatInput({
             className={`
               p-2.5 rounded-xl transition-all
               ${(permissionStatus === 'denied' || isDataSaverMode || isOffline)
-                ? 'bg-white/5 text-white/20 cursor-not-allowed'
-                : 'bg-white/10 text-white/70 hover:bg-white/20 hover:text-white'
+                ? 'bg-white/[0.02] text-white/20 cursor-not-allowed'
+                : 'bg-white/[0.05] text-white/50 hover:bg-white/[0.1] hover:text-white border border-transparent hover:border-white/[0.08]'
               }
               disabled:opacity-50 disabled:cursor-not-allowed
             `}
@@ -409,8 +409,8 @@ export default function ChatInput({
             p-2.5 rounded-xl
             transition-all duration-200
             ${message.trim() && !disabled && !isDataSaverMode && !(isOffline && !isOfflineModelReady)
-              ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-lg shadow-violet-500/30'
-              : 'bg-white/10 text-white/30 cursor-not-allowed'
+              ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-500/30'
+              : 'bg-white/[0.05] text-white/20 cursor-not-allowed'
             }
           `}
           title={isDataSaverMode ? 'Disabled in Data Saver mode' : 'Send message'}
@@ -428,7 +428,7 @@ export default function ChatInput({
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="absolute -top-6 right-2 text-xs text-white/40"
+          className="absolute -top-6 right-2 text-xs text-white/30"
         >
           {message.length} / 5000
         </motion.div>

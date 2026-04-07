@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  ArrowLeft, 
-  ArrowRight, 
+import {
+  ArrowLeft,
+  ArrowRight,
   ChevronLeft,
   ChevronRight,
-  Clock, 
+  Clock,
   AlertCircle,
   CheckCircle,
   X,
@@ -40,7 +40,7 @@ export default function QuizTakePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
-  
+
   // Timer state
   const [timeElapsed, setTimeElapsed] = useState(0);
   const [isTimerActive, setIsTimerActive] = useState(false);
@@ -53,7 +53,7 @@ export default function QuizTakePage() {
   // Review mode state
   const [isReviewMode, setIsReviewMode] = useState(false);
   const [reviewAnswers, setReviewAnswers] = useState({});
-  
+
   // AI Summary state
   const [quizSummary, setQuizSummary] = useState(null);
   const [loadingSummary, setLoadingSummary] = useState(false);
@@ -108,12 +108,12 @@ export default function QuizTakePage() {
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
-  
+
   // Helper for Hindi/English text
   const getText = (english, hindi) => {
     return showHindi && hindi ? hindi : english;
   };
-  
+
   // Fetch AI-generated quiz summary
   const fetchQuizSummary = async (quizId) => {
     try {
@@ -135,7 +135,7 @@ export default function QuizTakePage() {
   // Handle answer selection
   const handleSelectAnswer = (answer) => {
     if (showResults || isReviewMode) return;
-    
+
     const questionId = currentQuestion.question_id;
     setAnswers((prev) => ({
       ...prev,
@@ -180,7 +180,7 @@ export default function QuizTakePage() {
 
       const response = await quizzesApi.submitQuiz(quizId, { answers });
       const data = response.data;
-      
+
       // Transform feedback array into correct_answers map for review mode
       const correctAnswersMap = {};
       if (data.feedback && Array.isArray(data.feedback)) {
@@ -188,7 +188,7 @@ export default function QuizTakePage() {
           correctAnswersMap[item.question_id] = item.correct_answer;
         });
       }
-      
+
       // Store results with correct_answers map
       setResults({
         ...data,
@@ -202,7 +202,7 @@ export default function QuizTakePage() {
         setShowConfetti(true);
         setTimeout(() => setShowConfetti(false), 4000);
       }
-      
+
       // Fetch AI-generated quiz summary in background
       fetchQuizSummary(quizId);
     } catch (err) {
@@ -230,9 +230,13 @@ export default function QuizTakePage() {
   // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-violet-950 to-slate-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-violet-500/30 border-t-violet-500 rounded-full animate-spin mx-auto mb-4" />
+      <div className="min-h-screen bg-[#050816] flex items-center justify-center">
+        <div className="fixed inset-0 pointer-events-none">
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(249,115,22,0.08),transparent_50%)]" />
+          <div className="absolute inset-0 bg-grid-pattern opacity-30" />
+        </div>
+        <div className="text-center relative z-10">
+          <div className="w-16 h-16 border-4 border-orange-500/30 border-t-orange-500 rounded-full animate-spin mx-auto mb-4" />
           <p className="text-white/60">Loading your quiz...</p>
         </div>
       </div>
@@ -242,8 +246,12 @@ export default function QuizTakePage() {
   // Error state - quiz failed to load
   if (error && !quiz) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-violet-950 to-slate-900 flex items-center justify-center p-4">
-        <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-8 text-center max-w-md">
+      <div className="min-h-screen bg-[#050816] flex items-center justify-center p-4">
+        <div className="fixed inset-0 pointer-events-none">
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(249,115,22,0.08),transparent_50%)]" />
+          <div className="absolute inset-0 bg-grid-pattern opacity-30" />
+        </div>
+        <div className="glass-card p-8 text-center max-w-md relative z-10 border-red-500/30">
           <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-white mb-2">Oops! Something went wrong</h2>
           <p className="text-red-300 mb-6">{error}</p>
@@ -258,8 +266,12 @@ export default function QuizTakePage() {
   // No questions state
   if (quiz && (!questions || questions.length === 0)) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-violet-950 to-slate-900 flex items-center justify-center p-4">
-        <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-8 text-center max-w-md">
+      <div className="min-h-screen bg-[#050816] flex items-center justify-center p-4">
+        <div className="fixed inset-0 pointer-events-none">
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(249,115,22,0.08),transparent_50%)]" />
+          <div className="absolute inset-0 bg-grid-pattern opacity-30" />
+        </div>
+        <div className="glass-card p-8 text-center max-w-md relative z-10 border-amber-500/30">
           <AlertCircle className="w-12 h-12 text-amber-400 mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-white mb-2">No Questions Found</h2>
           <p className="text-amber-300 mb-6">This quiz doesn't have any questions yet.</p>
@@ -278,12 +290,14 @@ export default function QuizTakePage() {
     const isExcellent = scorePercentage >= 90;
 
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-violet-950 to-slate-900 overflow-y-auto">
+      <div className="min-h-screen bg-[#050816] overflow-y-auto">
         <ConfettiEffect isActive={showConfetti} intensity={isExcellent ? 'high' : 'medium'} />
-        
+
         {/* Background */}
         <div className="fixed inset-0 pointer-events-none">
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(120,119,198,0.15),transparent_50%)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(249,115,22,0.08),transparent_50%)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(34,211,238,0.06),transparent_50%)]" />
+          <div className="absolute inset-0 bg-grid-pattern opacity-30" />
         </div>
 
         <div className="relative z-10 max-w-2xl mx-auto px-4 py-8">
@@ -291,7 +305,7 @@ export default function QuizTakePage() {
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8 text-center"
+            className="glass-card p-8 text-center"
           >
             {/* Trophy Animation */}
             <motion.div
@@ -364,21 +378,21 @@ export default function QuizTakePage() {
               transition={{ delay: 1.2 }}
               className="grid grid-cols-3 gap-4 mb-8"
             >
-              <div className="bg-white/5 rounded-2xl p-4">
+              <div className="bg-white/[0.02] rounded-2xl p-4 border border-white/[0.05]">
                 <div className="text-2xl mb-1">✓</div>
                 <div className="text-xl font-bold text-emerald-400">
                   {results.correct_count || Math.round(totalQuestions * scorePercentage / 100)}
                 </div>
                 <div className="text-xs text-white/50">Correct</div>
               </div>
-              <div className="bg-white/5 rounded-2xl p-4">
+              <div className="bg-white/[0.02] rounded-2xl p-4 border border-white/[0.05]">
                 <div className="text-2xl mb-1">⚡</div>
-                <div className="text-xl font-bold text-violet-400">+{results.xp_earned || 0}</div>
+                <div className="text-xl font-bold text-orange-400">+{results.xp_earned || 0}</div>
                 <div className="text-xs text-white/50">XP Earned</div>
               </div>
-              <div className="bg-white/5 rounded-2xl p-4">
+              <div className="bg-white/[0.02] rounded-2xl p-4 border border-white/[0.05]">
                 <div className="text-2xl mb-1">⏱️</div>
-                <div className="text-xl font-bold text-blue-400">{formatTime(timeElapsed)}</div>
+                <div className="text-xl font-bold text-cyan-400">{formatTime(timeElapsed)}</div>
                 <div className="text-xs text-white/50">Time Taken</div>
               </div>
             </motion.div>
@@ -396,7 +410,7 @@ export default function QuizTakePage() {
                 </p>
               </motion.div>
             )}
-            
+
             {/* AI Summary Section */}
             <motion.div
               initial={{ opacity: 0 }}
@@ -406,10 +420,10 @@ export default function QuizTakePage() {
             >
               <button
                 onClick={() => setShowSummary(!showSummary)}
-                className="w-full bg-gradient-to-r from-violet-500/20 to-purple-500/20 border border-violet-500/30 rounded-2xl p-4 flex items-center justify-between hover:bg-violet-500/30 transition-colors"
+                className="w-full bg-gradient-to-r from-orange-500/20 to-cyan-500/20 border border-orange-500/30 rounded-2xl p-4 flex items-center justify-between hover:bg-orange-500/30 transition-colors"
               >
                 <div className="flex items-center gap-3">
-                  <Brain className="w-6 h-6 text-violet-400" />
+                  <Brain className="w-6 h-6 text-orange-400" />
                   <div className="text-left">
                     <h3 className="text-white font-semibold">AI Learning Summary</h3>
                     <p className="text-white/60 text-sm">
@@ -418,14 +432,14 @@ export default function QuizTakePage() {
                   </div>
                 </div>
                 {loadingSummary ? (
-                  <div className="w-5 h-5 border-2 border-violet-400/30 border-t-violet-400 rounded-full animate-spin" />
+                  <div className="w-5 h-5 border-2 border-orange-400/30 border-t-orange-400 rounded-full animate-spin" />
                 ) : showSummary ? (
                   <ChevronUp className="w-5 h-5 text-white/50" />
                 ) : (
                   <ChevronDown className="w-5 h-5 text-white/50" />
                 )}
               </button>
-              
+
               <AnimatePresence>
                 {showSummary && quizSummary && (
                   <motion.div
@@ -439,23 +453,22 @@ export default function QuizTakePage() {
                       <div className="flex justify-end">
                         <button
                           onClick={() => setShowHindi(!showHindi)}
-                          className={`px-3 py-1 rounded-lg text-xs transition-all ${
-                            showHindi
+                          className={`px-3 py-1 rounded-lg text-xs transition-all ${showHindi
                               ? 'bg-orange-500 text-white'
                               : 'bg-white/10 text-white/70 hover:bg-white/20'
-                          }`}
+                            }`}
                         >
                           {showHindi ? 'English' : 'हिंदी'}
                         </button>
                       </div>
-                      
+
                       {/* Summary Text */}
-                      <div className="bg-gradient-to-r from-violet-500/10 to-purple-500/10 rounded-xl p-4">
+                      <div className="bg-gradient-to-r from-orange-500/10 to-cyan-500/10 rounded-xl p-4">
                         <p className="text-white/90">
                           {getText(quizSummary.summary_text, quizSummary.summary_text_hindi)}
                         </p>
                       </div>
-                      
+
                       {/* Encouragement */}
                       {quizSummary.encouragement && (
                         <div className="flex items-start gap-3 bg-green-500/10 rounded-xl p-4">
@@ -465,7 +478,7 @@ export default function QuizTakePage() {
                           </p>
                         </div>
                       )}
-                      
+
                       {/* Topics to Review */}
                       {quizSummary.topics_to_review && quizSummary.topics_to_review.length > 0 && (
                         <div>
@@ -485,7 +498,7 @@ export default function QuizTakePage() {
                           </div>
                         </div>
                       )}
-                      
+
                       {/* Study Tips */}
                       {quizSummary.study_tips && quizSummary.study_tips.length > 0 && (
                         <div>
@@ -503,11 +516,11 @@ export default function QuizTakePage() {
                           </ul>
                         </div>
                       )}
-                      
+
                       {/* Concepts Explained */}
                       {quizSummary.concepts_explained && quizSummary.concepts_explained.length > 0 && (
                         <div>
-                          <h4 className="text-violet-400 font-medium mb-2 flex items-center gap-2">
+                          <h4 className="text-orange-400 font-medium mb-2 flex items-center gap-2">
                             <Brain className="w-4 h-4" />
                             Concepts Explained
                           </h4>
@@ -515,7 +528,7 @@ export default function QuizTakePage() {
                             {quizSummary.concepts_explained.map((concept, i) => (
                               <div
                                 key={i}
-                                className="bg-white/5 rounded-lg overflow-hidden"
+                                className="bg-white/[0.02] rounded-lg overflow-hidden border border-white/[0.05]"
                               >
                                 <button
                                   onClick={() => setExpandedConcept(expandedConcept === i ? null : i)}
@@ -547,19 +560,19 @@ export default function QuizTakePage() {
                           </div>
                         </div>
                       )}
-                      
+
                       {/* Next Steps */}
                       {quizSummary.next_steps && (
-                        <div className="bg-blue-500/10 rounded-xl p-4">
-                          <h4 className="text-blue-400 font-medium mb-1">What's Next?</h4>
+                        <div className="bg-cyan-500/10 rounded-xl p-4 border border-cyan-500/20">
+                          <h4 className="text-cyan-400 font-medium mb-1">What's Next?</h4>
                           <p className="text-white/80 text-sm">{quizSummary.next_steps}</p>
                         </div>
                       )}
-                      
+
                       {/* Link to Full Insights */}
                       <button
                         onClick={() => navigate('/insights')}
-                        className="w-full py-3 bg-gradient-to-r from-violet-500/20 to-purple-500/20 border border-violet-500/30 rounded-xl text-violet-300 hover:bg-violet-500/30 transition-colors text-sm"
+                        className="w-full py-3 bg-gradient-to-r from-orange-500/20 to-cyan-500/20 border border-orange-500/30 rounded-xl text-orange-300 hover:bg-orange-500/30 transition-colors text-sm"
                       >
                         View Full Learning Insights →
                       </button>
@@ -599,14 +612,16 @@ export default function QuizTakePage() {
 
   // Main quiz-taking view
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-violet-950 to-slate-900 flex flex-col">
+    <div className="min-h-screen bg-[#050816] flex flex-col">
       {/* Background */}
       <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(120,119,198,0.15),transparent_50%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(249,115,22,0.08),transparent_50%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(34,211,238,0.06),transparent_50%)]" />
+        <div className="absolute inset-0 bg-grid-pattern opacity-30" />
       </div>
 
       {/* Header */}
-      <div className="relative z-10 px-4 py-4 border-b border-white/10 bg-white/5 backdrop-blur-sm">
+      <div className="relative z-10 px-4 py-4 border-b border-white/[0.08] bg-white/[0.02] backdrop-blur-sm">
         <div className="max-w-2xl mx-auto flex items-center justify-between">
           <button
             onClick={() => {
@@ -626,7 +641,7 @@ export default function QuizTakePage() {
               {quiz?.topic || 'Quiz'}
             </h1>
             {isReviewMode && (
-              <span className="text-xs text-amber-400">Review Mode</span>
+              <span className="text-xs text-orange-400">Review Mode</span>
             )}
           </div>
 
@@ -706,7 +721,7 @@ export default function QuizTakePage() {
       </div>
 
       {/* Navigation Footer */}
-      <div className="fixed bottom-0 left-0 right-0 z-20 px-4 py-4 bg-slate-900/90 backdrop-blur-lg border-t border-white/10">
+      <div className="fixed bottom-0 left-0 right-0 z-20 px-4 py-4 bg-[#050816]/90 backdrop-blur-lg border-t border-white/[0.08]">
         <div className="max-w-2xl mx-auto">
           <div className="flex items-center justify-between gap-4">
             {/* Previous Button */}
@@ -734,9 +749,9 @@ export default function QuizTakePage() {
                     className={`
                       w-8 h-8 rounded-lg text-xs font-bold transition-all
                       ${actualIndex === currentQuestionIndex
-                        ? 'bg-violet-500 text-white'
+                        ? 'bg-orange-500 text-white'
                         : answers[q.question_id]
-                          ? 'bg-violet-500/20 text-violet-400'
+                          ? 'bg-orange-500/20 text-orange-400'
                           : 'bg-white/10 text-white/40 hover:bg-white/20'
                       }
                     `}

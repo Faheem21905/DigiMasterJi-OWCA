@@ -22,7 +22,7 @@ export default function QuestionCard({
   const getOptionStyle = (option, index) => {
     const isSelected = selectedAnswer === option;
     const isCorrectAnswer = question.correct_answer === option;
-    
+
     if (showResult) {
       if (isCorrectAnswer) {
         return 'border-emerald-500 bg-emerald-500/20 text-emerald-300';
@@ -30,14 +30,14 @@ export default function QuestionCard({
       if (isSelected && !isCorrectAnswer) {
         return 'border-red-500 bg-red-500/20 text-red-300';
       }
-      return 'border-white/10 bg-white/5 text-white/50';
+      return 'border-white/[0.08] bg-white/[0.02] text-white/50';
     }
-    
+
     if (isSelected) {
-      return 'border-violet-500 bg-violet-500/20 text-violet-300 shadow-lg shadow-violet-500/20';
+      return 'border-orange-500 bg-orange-500/20 text-orange-300 shadow-lg shadow-orange-500/20';
     }
-    
-    return 'border-white/10 bg-white/5 hover:border-violet-400/50 hover:bg-violet-500/10 text-white';
+
+    return 'border-white/[0.08] bg-white/[0.02] hover:border-orange-400/50 hover:bg-orange-500/10 text-white';
   };
 
   const optionLabels = ['A', 'B', 'C', 'D'];
@@ -55,11 +55,11 @@ export default function QuestionCard({
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           transition={{ type: 'spring', stiffness: 500, delay: 0.1 }}
-          className="flex-shrink-0 w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-violet-500/30"
+          className="flex-shrink-0 w-12 h-12 rounded-2xl bg-gradient-to-br from-orange-500 to-cyan-600 flex items-center justify-center shadow-lg shadow-orange-500/30"
         >
           <span className="text-white font-bold text-lg">{questionNumber}</span>
         </motion.div>
-        
+
         <div className="flex-1">
           <div className="text-xs text-white/50 mb-1 uppercase tracking-wider">
             Question {questionNumber} of {totalQuestions}
@@ -107,8 +107,8 @@ export default function QuestionCard({
             <div className={`
               w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm
               transition-all duration-200
-              ${selectedAnswer === option 
-                ? 'bg-violet-500 text-white' 
+              ${selectedAnswer === option
+                ? 'bg-orange-500 text-white'
                 : showResult && question.correct_answer === option
                   ? 'bg-emerald-500 text-white'
                   : 'bg-white/10 text-white/70'
@@ -133,7 +133,7 @@ export default function QuestionCard({
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   exit={{ scale: 0 }}
-                  className="w-6 h-6 rounded-full bg-violet-500 flex items-center justify-center"
+                  className="w-6 h-6 rounded-full bg-orange-500 flex items-center justify-center"
                 >
                   <Check className="w-4 h-4 text-white" />
                 </motion.div>
@@ -152,8 +152,8 @@ export default function QuestionCard({
             exit={{ opacity: 0, y: -20 }}
             className={`
               mt-6 p-4 rounded-2xl border-2 flex items-center gap-3
-              ${isCorrect 
-                ? 'bg-emerald-500/10 border-emerald-500/30' 
+              ${isCorrect
+                ? 'bg-emerald-500/10 border-emerald-500/30'
                 : 'bg-red-500/10 border-red-500/30'
               }
             `}

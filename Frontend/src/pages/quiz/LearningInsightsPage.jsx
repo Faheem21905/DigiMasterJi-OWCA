@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
+import {
   ArrowLeft,
   Brain,
   TrendingUp,
@@ -41,7 +41,7 @@ export default function LearningInsightsPage() {
   const navigate = useNavigate();
   const { activeProfile, isProfileSessionValid } = useProfile();
   const { isOnline } = useNetworkStatus();
-  
+
   const [insights, setInsights] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -77,7 +77,7 @@ export default function LearningInsightsPage() {
 
       const response = await quizzesApi.getStoredInsights();
       setInsights(response.data);
-      
+
       // Check if insights were auto-generated
       if (response.data.generated_at) {
         setGeneratedAt(new Date(response.data.generated_at));
@@ -184,13 +184,17 @@ export default function LearningInsightsPage() {
   // Loading State
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-violet-950 to-slate-900 flex items-center justify-center">
+      <div className="min-h-screen bg-[#050816] flex items-center justify-center">
+        <div className="fixed inset-0 pointer-events-none">
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(249,115,22,0.08),transparent_50%)]" />
+          <div className="absolute inset-0 bg-grid-pattern opacity-30" />
+        </div>
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="text-center"
+          className="text-center relative z-10"
         >
-          <Brain className="w-16 h-16 text-violet-400 mx-auto mb-4 animate-pulse" />
+          <Brain className="w-16 h-16 text-orange-400 mx-auto mb-4 animate-pulse" />
           <p className="text-white/70 text-lg">Analyzing your learning journey...</p>
           <p className="text-white/50 text-sm mt-2">आपकी सीखने की यात्रा का विश्लेषण...</p>
         </motion.div>
@@ -201,11 +205,13 @@ export default function LearningInsightsPage() {
   // No Data State
   if (insights && !insights.has_data) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-violet-950 to-slate-900">
+      <div className="min-h-screen bg-[#050816]">
         <div className="fixed inset-0 pointer-events-none">
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(120,119,198,0.15),transparent_50%)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(249,115,22,0.08),transparent_50%)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(34,211,238,0.06),transparent_50%)]" />
+          <div className="absolute inset-0 bg-grid-pattern opacity-30" />
         </div>
-        
+
         <div className="relative z-10 max-w-4xl mx-auto px-4 py-6">
           {/* Header */}
           <motion.div
@@ -215,7 +221,7 @@ export default function LearningInsightsPage() {
           >
             <button
               onClick={() => navigate(-1)}
-              className="p-2 rounded-xl bg-white/5 hover:bg-white/10 transition-colors"
+              className="p-2 rounded-xl bg-white/[0.02] hover:bg-white/10 transition-colors border border-white/[0.05]"
             >
               <ArrowLeft className="w-5 h-5 text-white" />
             </button>
@@ -228,9 +234,9 @@ export default function LearningInsightsPage() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white/5 rounded-2xl p-8 text-center"
+            className="glass-card p-8 text-center"
           >
-            <BookOpen className="w-16 h-16 text-violet-400 mx-auto mb-4" />
+            <BookOpen className="w-16 h-16 text-orange-400 mx-auto mb-4" />
             <h2 className="text-xl font-semibold text-white mb-2">
               {insights.message || "No quiz data available yet"}
             </h2>
@@ -239,7 +245,7 @@ export default function LearningInsightsPage() {
             </p>
             <Button
               onClick={() => navigate('/quiz')}
-              className="bg-gradient-to-r from-violet-500 to-purple-500"
+              variant="primary"
             >
               <Target className="w-4 h-4 mr-2" />
               Take Your First Quiz
@@ -251,11 +257,12 @@ export default function LearningInsightsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-violet-950 to-slate-900 overflow-y-auto">
+    <div className="min-h-screen bg-[#050816] overflow-y-auto">
       {/* Animated Background */}
       <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(120,119,198,0.15),transparent_50%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(251,146,60,0.1),transparent_50%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(249,115,22,0.08),transparent_50%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(34,211,238,0.06),transparent_50%)]" />
+        <div className="absolute inset-0 bg-grid-pattern opacity-30" />
       </div>
 
       <div className="relative z-10 max-w-4xl mx-auto px-4 py-6 pb-24">
@@ -268,13 +275,13 @@ export default function LearningInsightsPage() {
           <div className="flex items-center gap-4">
             <button
               onClick={() => navigate(-1)}
-              className="p-2 rounded-xl bg-white/5 hover:bg-white/10 transition-colors"
+              className="p-2 rounded-xl bg-white/[0.02] hover:bg-white/10 transition-colors border border-white/[0.05]"
             >
               <ArrowLeft className="w-5 h-5 text-white" />
             </button>
             <div>
               <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-                <Brain className="w-7 h-7 text-violet-400" />
+                <Brain className="w-7 h-7 text-orange-400" />
                 Learning Insights
               </h1>
               <p className="text-white/60">
@@ -288,7 +295,7 @@ export default function LearningInsightsPage() {
             <button
               onClick={handleRefresh}
               disabled={refreshing || !isOnline}
-              className="p-2 rounded-xl bg-white/5 hover:bg-white/10 transition-colors disabled:opacity-50"
+              className="p-2 rounded-xl bg-white/[0.02] hover:bg-white/10 transition-colors disabled:opacity-50 border border-white/[0.05]"
             >
               <RefreshCw className={`w-5 h-5 text-white ${refreshing ? 'animate-spin' : ''}`} />
             </button>
@@ -306,15 +313,15 @@ export default function LearningInsightsPage() {
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
               <Sparkles className="w-4 h-4 text-emerald-400" />
               <span className="text-emerald-400 text-sm">
-                Auto-generated • {new Date(generatedAt).toLocaleDateString()} 
+                Auto-generated • {new Date(generatedAt).toLocaleDateString()}
                 {new Date(generatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </span>
             </div>
           )}
           {!isAutoGenerated && generatedAt && (
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-violet-500/10 border border-violet-500/20">
-              <Zap className="w-4 h-4 text-violet-400" />
-              <span className="text-violet-400 text-sm">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-orange-500/10 border border-orange-500/20">
+              <Zap className="w-4 h-4 text-orange-400" />
+              <span className="text-orange-400 text-sm">
                 Fresh analysis • {new Date(generatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </span>
             </div>
@@ -322,11 +329,10 @@ export default function LearningInsightsPage() {
           {!generatedAt && <div />}
           <button
             onClick={() => setShowHindi(!showHindi)}
-            className={`px-4 py-1.5 rounded-lg text-sm transition-all ${
-              showHindi
+            className={`px-4 py-1.5 rounded-lg text-sm transition-all ${showHindi
                 ? 'bg-orange-500 text-white'
-                : 'bg-white/5 text-white/70 hover:bg-white/10'
-            }`}
+                : 'bg-white/[0.02] text-white/70 hover:bg-white/10 border border-white/[0.05]'
+              }`}
           >
             {showHindi ? 'English' : 'हिंदी'}
           </button>
@@ -378,15 +384,15 @@ export default function LearningInsightsPage() {
               transition={{ delay: 0.1 }}
               className="grid grid-cols-3 gap-4 mb-6"
             >
-              <div className="bg-white/5 rounded-xl p-4 text-center">
-                <div className="text-3xl font-bold text-violet-400">{insights.total_quizzes || 0}</div>
+              <div className="bg-white/[0.02] rounded-xl p-4 text-center border border-white/[0.05]">
+                <div className="text-3xl font-bold text-orange-400">{insights.total_quizzes || 0}</div>
                 <div className="text-white/60 text-sm">Quizzes Taken</div>
               </div>
-              <div className="bg-white/5 rounded-xl p-4 text-center">
+              <div className="bg-white/[0.02] rounded-xl p-4 text-center border border-white/[0.05]">
                 <div className="text-3xl font-bold text-cyan-400">{insights.overall_average || 0}%</div>
                 <div className="text-white/60 text-sm">Average Score</div>
               </div>
-              <div className="bg-white/5 rounded-xl p-4 text-center flex flex-col items-center">
+              <div className="bg-white/[0.02] rounded-xl p-4 text-center flex flex-col items-center border border-white/[0.05]">
                 <div className="flex items-center gap-2">
                   {getTrendIcon(insights.performance_trend)}
                   <span className="text-xl font-bold text-white capitalize">
@@ -406,7 +412,7 @@ export default function LearningInsightsPage() {
                 className="mb-6"
               >
                 <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                  <GraduationCap className="w-5 h-5 text-violet-400" />
+                  <GraduationCap className="w-5 h-5 text-orange-400" />
                   Subject-wise Analysis
                 </h3>
                 <div className="space-y-3">
@@ -416,7 +422,7 @@ export default function LearningInsightsPage() {
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.1 * index }}
-                      className="bg-white/5 rounded-xl overflow-hidden"
+                      className="glass-card overflow-hidden"
                     >
                       <button
                         onClick={() => toggleSubjectExpansion(subject.subject)}
@@ -437,7 +443,7 @@ export default function LearningInsightsPage() {
                           )}
                         </div>
                       </button>
-                      
+
                       <AnimatePresence>
                         {expandedSubject === subject.subject && (
                           <motion.div
@@ -497,7 +503,7 @@ export default function LearningInsightsPage() {
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.1 * index }}
-                      className="bg-white/5 rounded-xl overflow-hidden"
+                      className="glass-card overflow-hidden"
                     >
                       <button
                         onClick={() => toggleWeakTopicExpansion(`${topic.topic}-${index}`)}
@@ -516,27 +522,27 @@ export default function LearningInsightsPage() {
                           <ChevronDown className="w-5 h-5 text-white/50" />
                         )}
                       </button>
-                      
+
                       <AnimatePresence>
                         {expandedWeakTopic === `${topic.topic}-${index}` && (
                           <motion.div
                             initial={{ height: 0, opacity: 0 }}
                             animate={{ height: 'auto', opacity: 1 }}
                             exit={{ height: 0, opacity: 0 }}
-                            className="border-t border-white/10"
+                            className="border-t border-white/[0.08]"
                           >
                             <div className="p-4 space-y-4">
-                              <div className="bg-blue-500/10 rounded-lg p-3">
-                                <p className="text-blue-400 text-sm mb-1">Why it matters:</p>
+                              <div className="bg-cyan-500/10 rounded-lg p-3 border border-cyan-500/20">
+                                <p className="text-cyan-400 text-sm mb-1">Why it matters:</p>
                                 <p className="text-white/80">{topic.why_important}</p>
                               </div>
-                              <div className="bg-violet-500/10 rounded-lg p-3">
-                                <p className="text-violet-400 text-sm mb-1">Simple Explanation:</p>
+                              <div className="bg-orange-500/10 rounded-lg p-3 border border-orange-500/20">
+                                <p className="text-orange-400 text-sm mb-1">Simple Explanation:</p>
                                 <p className="text-white/80">
                                   {getText(topic.simple_explanation, topic.simple_explanation_hindi)}
                                 </p>
                               </div>
-                              <div className="bg-green-500/10 rounded-lg p-3">
+                              <div className="bg-green-500/10 rounded-lg p-3 border border-green-500/20">
                                 <p className="text-green-400 text-sm mb-1">Practice Tip:</p>
                                 <p className="text-white/80">{topic.practice_tip}</p>
                               </div>
@@ -605,7 +611,7 @@ export default function LearningInsightsPage() {
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.1 * index }}
-                      className="bg-white/5 rounded-xl p-4 flex items-center gap-4"
+                      className="bg-white/[0.02] rounded-xl p-4 flex items-center gap-4 border border-white/[0.05]"
                     >
                       <div className="w-8 h-8 rounded-full bg-cyan-500/20 flex items-center justify-center text-cyan-400 font-bold">
                         {index + 1}
@@ -628,9 +634,9 @@ export default function LearningInsightsPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.6 }}
-                className="bg-gradient-to-r from-violet-500/20 to-purple-500/20 rounded-2xl p-6 text-center border border-violet-500/20"
+                className="bg-gradient-to-r from-orange-500/20 to-cyan-500/20 rounded-2xl p-6 text-center border border-orange-500/20"
               >
-                <Award className="w-12 h-12 text-violet-400 mx-auto mb-4" />
+                <Award className="w-12 h-12 text-orange-400 mx-auto mb-4" />
                 <p className="text-white text-lg font-medium">
                   {getText(insights.motivational_message, insights.motivational_message_hindi)}
                 </p>

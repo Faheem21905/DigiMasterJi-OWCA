@@ -34,33 +34,42 @@ export default function SettingsPage() {
     const [autoOffline, setAutoOffline] = useState(true);
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-950 via-violet-950 to-slate-950">
+        <div className="min-h-screen bg-[#050816]">
             {/* Animated Background */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            <div className="fixed inset-0 overflow-hidden pointer-events-none">
+                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(249,115,22,0.08),transparent_50%)]" />
+                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(34,211,238,0.06),transparent_50%)]" />
+                <div className="absolute inset-0 bg-grid-pattern opacity-30" />
                 <motion.div
                     animate={{ x: [0, 50, 0], y: [0, -30, 0] }}
                     transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
-                    className="absolute -top-40 -left-40 w-[400px] h-[400px] bg-violet-600/10 rounded-full blur-3xl"
+                    className="absolute -top-40 -left-40 w-[400px] h-[400px] bg-orange-500/5 rounded-full blur-3xl"
                 />
                 <motion.div
                     animate={{ x: [0, -30, 0], y: [0, 50, 0] }}
                     transition={{ duration: 25, repeat: Infinity, ease: 'linear' }}
-                    className="absolute -bottom-40 -right-40 w-[400px] h-[400px] bg-indigo-600/10 rounded-full blur-3xl"
+                    className="absolute -bottom-40 -right-40 w-[400px] h-[400px] bg-cyan-500/5 rounded-full blur-3xl"
                 />
             </div>
 
             {/* Content */}
             <div className="relative z-10 max-w-2xl mx-auto px-4 py-8">
                 {/* Header */}
-                <div className="flex items-center gap-4 mb-8">
-                    <button
+                <motion.div
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex items-center gap-4 mb-8"
+                >
+                    <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
                         onClick={() => navigate(-1)}
-                        className="p-2 rounded-xl bg-white/10 hover:bg-white/20 transition-colors"
+                        className="p-2 rounded-xl glass hover:border-white/20 transition-colors"
                     >
                         <ArrowLeft className="w-5 h-5 text-white" />
-                    </button>
+                    </motion.button>
                     <div className="flex items-center gap-3">
-                        <div className="p-2.5 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600">
+                        <div className="p-2.5 rounded-xl bg-gradient-to-br from-orange-500 to-amber-600">
                             <Settings className="w-6 h-6 text-white" />
                         </div>
                         <div>
@@ -68,14 +77,18 @@ export default function SettingsPage() {
                             <p className="text-white/50 text-sm">Manage app preferences</p>
                         </div>
                     </div>
-                </div>
+                </motion.div>
 
                 {/* Settings Sections */}
                 <div className="space-y-6">
                     {/* Offline Mode Section */}
-                    <section>
+                    <motion.section
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.1 }}
+                    >
                         <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                            <WifiOff className="w-5 h-5 text-violet-400" />
+                            <WifiOff className="w-5 h-5 text-orange-400" />
                             Offline Mode
                         </h2>
 
@@ -86,12 +99,12 @@ export default function SettingsPage() {
                             <motion.div
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                className="bg-white/5 rounded-xl p-4 border border-white/10"
+                                className="glass-card p-4"
                             >
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-3">
-                                        <div className="p-2 rounded-lg bg-violet-500/20">
-                                            <Wifi className="w-4 h-4 text-violet-400" />
+                                        <div className="p-2 rounded-lg bg-orange-500/20">
+                                            <Wifi className="w-4 h-4 text-orange-400" />
                                         </div>
                                         <div>
                                             <p className="text-white font-medium">Auto-switch to offline</p>
@@ -102,7 +115,7 @@ export default function SettingsPage() {
                                     </div>
                                     <button
                                         onClick={() => setAutoOffline(!autoOffline)}
-                                        className={`w-12 h-6 rounded-full transition-colors relative ${autoOffline ? 'bg-violet-500' : 'bg-white/20'
+                                        className={`w-12 h-6 rounded-full transition-colors relative ${autoOffline ? 'bg-orange-500' : 'bg-white/20'
                                             }`}
                                     >
                                         <motion.div
@@ -114,18 +127,22 @@ export default function SettingsPage() {
                                 </div>
                             </motion.div>
                         )}
-                    </section>
+                    </motion.section>
 
                     {/* About Section */}
-                    <section>
+                    <motion.section
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.2 }}
+                    >
                         <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                            <Info className="w-5 h-5 text-blue-400" />
+                            <Info className="w-5 h-5 text-cyan-400" />
                             About Offline Mode
                         </h2>
 
-                        <div className="bg-white/5 rounded-xl p-4 border border-white/10 space-y-3">
+                        <div className="glass-card p-4 space-y-3">
                             <div className="flex items-start gap-3">
-                                <Check className="w-5 h-5 text-green-400 mt-0.5" />
+                                <Check className="w-5 h-5 text-emerald-400 mt-0.5" />
                                 <div>
                                     <p className="text-white font-medium">Works without internet</p>
                                     <p className="text-white/50 text-sm">
@@ -145,7 +162,7 @@ export default function SettingsPage() {
                             </div>
 
                             <div className="flex items-start gap-3">
-                                <Volume2 className="w-5 h-5 text-violet-400 mt-0.5" />
+                                <Volume2 className="w-5 h-5 text-orange-400 mt-0.5" />
                                 <div>
                                     <p className="text-white font-medium">Text-only in offline mode</p>
                                     <p className="text-white/50 text-sm">
@@ -154,32 +171,36 @@ export default function SettingsPage() {
                                 </div>
                             </div>
                         </div>
-                    </section>
+                    </motion.section>
 
                     {/* Device Info */}
-                    <section>
+                    <motion.section
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.3 }}
+                    >
                         <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
                             <HardDrive className="w-5 h-5 text-emerald-400" />
                             Device Status
                         </h2>
 
-                        <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                        <div className="glass-card p-4">
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <p className="text-white/50 text-sm">Network</p>
-                                    <p className={`font-medium ${isOnline ? 'text-green-400' : 'text-red-400'}`}>
+                                    <p className={`font-medium ${isOnline ? 'text-emerald-400' : 'text-red-400'}`}>
                                         {isOnline ? 'Online' : 'Offline'}
                                     </p>
                                 </div>
                                 <div>
                                     <p className="text-white/50 text-sm">WebGPU Support</p>
-                                    <p className={`font-medium ${isSupported ? 'text-green-400' : 'text-red-400'}`}>
+                                    <p className={`font-medium ${isSupported ? 'text-emerald-400' : 'text-red-400'}`}>
                                         {isSupported ? 'Supported' : 'Not Supported'}
                                     </p>
                                 </div>
                                 <div>
                                     <p className="text-white/50 text-sm">Offline Model</p>
-                                    <p className={`font-medium ${isModelReady ? 'text-green-400' : 'text-white/70'}`}>
+                                    <p className={`font-medium ${isModelReady ? 'text-emerald-400' : 'text-white/70'}`}>
                                         {isModelReady ? 'Ready' : 'Not Downloaded'}
                                     </p>
                                 </div>
@@ -189,7 +210,7 @@ export default function SettingsPage() {
                                 </div>
                             </div>
                         </div>
-                    </section>
+                    </motion.section>
                 </div>
             </div>
         </div>

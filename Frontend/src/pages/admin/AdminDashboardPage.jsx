@@ -52,8 +52,8 @@ export default function AdminDashboardPage() {
       whileTap={onClick ? { scale: 0.98 } : {}}
       onClick={onClick}
       className={`
-        bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6
-        ${onClick ? 'cursor-pointer hover:border-violet-500/30' : ''}
+        glass-card p-6
+        ${onClick ? 'cursor-pointer hover:border-orange-500/30' : ''}
       `}
     >
       <div className="flex items-start justify-between mb-4">
@@ -73,7 +73,7 @@ export default function AdminDashboardPage() {
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
       onClick={onClick}
-      className="flex items-center gap-4 p-4 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl hover:border-violet-500/30 transition-all text-left w-full"
+      className="flex items-center gap-4 p-4 glass-card hover:border-orange-500/30 transition-all text-left w-full"
     >
       <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${color}`}>
         <Icon className="w-6 h-6 text-white" />
@@ -90,7 +90,7 @@ export default function AdminDashboardPage() {
     return (
       <div className="flex items-center justify-center h-[60vh]">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-violet-500/30 border-t-violet-500 rounded-full animate-spin mx-auto mb-4" />
+          <div className="w-16 h-16 border-4 border-orange-500/30 border-t-orange-500 rounded-full animate-spin mx-auto mb-4" />
           <p className="text-white/60">Loading dashboard...</p>
         </div>
       </div>
@@ -206,10 +206,10 @@ export default function AdminDashboardPage() {
         {/* RAG Info Card */}
         <div>
           <h2 className="text-xl font-semibold text-white mb-4">RAG Configuration</h2>
-          <Card className="p-6 space-y-4">
+          <Card variant="glass" className="p-6 space-y-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-violet-500/20 rounded-lg flex items-center justify-center">
-                <Cpu className="w-5 h-5 text-violet-400" />
+              <div className="w-10 h-10 bg-orange-500/20 rounded-lg flex items-center justify-center">
+                <Cpu className="w-5 h-5 text-orange-400" />
               </div>
               <div>
                 <p className="text-sm text-white/60">Embedding Model</p>
@@ -263,7 +263,7 @@ export default function AdminDashboardPage() {
             {SUBJECT_OPTIONS.map((subject) => {
               const count = stats.by_subject[subject.value] || 0;
               return (
-                <Card key={subject.value} className="p-4 text-center">
+                <Card key={subject.value} variant="glass" className="p-4 text-center hover:border-orange-500/30 transition-all">
                   <span className="text-3xl mb-2 block">{subject.emoji}</span>
                   <p className="text-white font-semibold">{subject.label}</p>
                   <p className="text-white/60 text-sm">{count} chunks</p>

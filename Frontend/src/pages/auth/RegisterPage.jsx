@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Phone, Mail, ArrowRight, Smartphone, Lock, User, CheckCircle2 } from 'lucide-react';
+import { Phone, Mail, ArrowRight, Smartphone, Lock, User, CheckCircle2, AlertCircle } from 'lucide-react';
 import { AuthLayout } from '../../components/layouts';
 import { Button, Input, OtpInput, Card } from '../../components/ui';
 import { authApi } from '../../api/auth';
@@ -136,16 +136,16 @@ export default function RegisterPage() {
     if (password.length === 0) return { strength: 0, label: '' };
     if (password.length < 6) return { strength: 1, label: 'Weak', color: 'bg-rose-500' };
     if (password.length < 8) return { strength: 2, label: 'Fair', color: 'bg-amber-500' };
-    
+
     const hasUpper = /[A-Z]/.test(password);
     const hasLower = /[a-z]/.test(password);
     const hasNumber = /[0-9]/.test(password);
     const hasSpecial = /[!@#$%^&*]/.test(password);
-    
+
     const score = [hasUpper, hasLower, hasNumber, hasSpecial].filter(Boolean).length;
-    
+
     if (score >= 3) return { strength: 4, label: 'Strong', color: 'bg-emerald-500' };
-    if (score >= 2) return { strength: 3, label: 'Good', color: 'bg-violet-500' };
+    if (score >= 2) return { strength: 3, label: 'Good', color: 'bg-orange-500' };
     return { strength: 2, label: 'Fair', color: 'bg-amber-500' };
   };
 
@@ -153,7 +153,7 @@ export default function RegisterPage() {
 
   return (
     <AuthLayout>
-      <Card className="p-8">
+      <Card variant="glass" className="p-8 backdrop-blur-2xl">
         {/* Progress Steps */}
         <div className="flex items-center justify-center gap-2 mb-8">
           {[1, 2, 3].map((s) => (
@@ -162,11 +162,11 @@ export default function RegisterPage() {
                 initial={false}
                 animate={{
                   scale: step >= s ? 1 : 0.8,
-                  backgroundColor: step >= s ? 'rgb(139, 92, 246)' : 'rgba(255,255,255,0.1)',
+                  backgroundColor: step >= s ? 'rgb(249, 115, 22)' : 'rgba(255,255,255,0.1)',
                 }}
-                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
-                  step >= s ? 'text-white' : 'text-white/40'
-                }`}
+                transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${step >= s ? 'text-white shadow-lg shadow-orange-500/30' : 'text-white/40'
+                  }`}
               >
                 {step > s ? <CheckCircle2 className="w-5 h-5" /> : s}
               </motion.div>
@@ -174,7 +174,7 @@ export default function RegisterPage() {
                 <motion.div
                   initial={false}
                   animate={{
-                    backgroundColor: step > s ? 'rgb(139, 92, 246)' : 'rgba(255,255,255,0.1)',
+                    backgroundColor: step > s ? 'rgb(249, 115, 22)' : 'rgba(255,255,255,0.1)',
                   }}
                   className="w-12 h-1 rounded-full mx-2"
                 />
@@ -194,7 +194,7 @@ export default function RegisterPage() {
               className="text-center mb-8"
             >
               <h2 className="text-2xl font-bold text-white mb-2">Create Account</h2>
-              <p className="text-white/60">Start your learning adventure today</p>
+              <p className="text-white/50">Start your learning adventure today</p>
             </motion.div>
           )}
           {step === 2 && (
@@ -206,7 +206,7 @@ export default function RegisterPage() {
               className="text-center mb-8"
             >
               <h2 className="text-2xl font-bold text-white mb-2">Verify Phone</h2>
-              <p className="text-white/60">
+              <p className="text-white/50">
                 Enter the code sent to +91 {formData.phone}
               </p>
             </motion.div>
@@ -227,56 +227,63 @@ export default function RegisterPage() {
                 <CheckCircle2 className="w-10 h-10 text-white" />
               </motion.div>
               <h2 className="text-2xl font-bold text-white mb-2">Welcome Aboard!</h2>
-              <p className="text-white/60">Your account has been created successfully</p>
-              <p className="text-sm text-violet-400 mt-4">Redirecting to profiles...</p>
+              <p className="text-white/50">Your account has been created successfully</p>
+              <p className="text-sm text-orange-400 mt-4">Redirecting to profiles...</p>
             </motion.div>
           )}
         </AnimatePresence>
 
         {/* Auth Method Toggle (only on step 1) */}
         {step === 1 && (
-          <div className="flex gap-2 p-1 bg-white/5 rounded-xl mb-6">
-            <button
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="flex gap-2 p-1.5 bg-white/[0.03] rounded-xl mb-6 border border-white/[0.06]"
+          >
+            <motion.button
               onClick={() => {
                 setAuthMethod('phone');
                 setError('');
               }}
-              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg font-medium transition-all duration-200 ${
-                authMethod === 'phone'
-                  ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-lg'
-                  : 'text-white/60 hover:text-white'
-              }`}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg font-medium transition-all duration-300 ${authMethod === 'phone'
+                ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-500/25'
+                : 'text-white/50 hover:text-white hover:bg-white/[0.05]'
+                }`}
             >
               <Phone className="w-4 h-4" />
               Phone
-            </button>
-            <button
+            </motion.button>
+            <motion.button
               onClick={() => {
                 setAuthMethod('email');
                 setError('');
               }}
-              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg font-medium transition-all duration-200 ${
-                authMethod === 'email'
-                  ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-lg'
-                  : 'text-white/60 hover:text-white'
-              }`}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg font-medium transition-all duration-300 ${authMethod === 'email'
+                ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-500/25'
+                : 'text-white/50 hover:text-white hover:bg-white/[0.05]'
+                }`}
             >
               <Mail className="w-4 h-4" />
               Email
-            </button>
-          </div>
+            </motion.button>
+          </motion.div>
         )}
 
         {/* Error Message */}
         <AnimatePresence mode="wait">
           {error && (
             <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="mb-4 p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl"
+              initial={{ opacity: 0, y: -10, height: 0 }}
+              animate={{ opacity: 1, y: 0, height: 'auto' }}
+              exit={{ opacity: 0, y: -10, height: 0 }}
+              className="mb-4 p-4 bg-rose-500/10 border border-rose-500/20 rounded-xl flex items-start gap-3"
             >
-              <p className="text-sm text-rose-400 text-center">{error}</p>
+              <AlertCircle className="w-5 h-5 text-rose-400 flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-rose-400">{error}</p>
             </motion.div>
           )}
         </AnimatePresence>
@@ -289,6 +296,7 @@ export default function RegisterPage() {
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 20 }}
+              transition={{ duration: 0.3 }}
               onSubmit={handleSubmitDetails}
               className="space-y-5"
             >
@@ -347,23 +355,28 @@ export default function RegisterPage() {
                       required
                     />
                     {formData.password && (
-                      <div className="mt-2">
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        className="mt-2"
+                      >
                         <div className="flex gap-1 mb-1">
                           {[1, 2, 3, 4].map((level) => (
-                            <div
+                            <motion.div
                               key={level}
-                              className={`h-1 flex-1 rounded-full transition-colors ${
-                                level <= passwordStrength.strength
-                                  ? passwordStrength.color
-                                  : 'bg-white/10'
-                              }`}
+                              initial={{ scaleX: 0 }}
+                              animate={{ scaleX: level <= passwordStrength.strength ? 1 : 0.5 }}
+                              className={`h-1.5 flex-1 rounded-full transition-colors origin-left ${level <= passwordStrength.strength
+                                ? passwordStrength.color
+                                : 'bg-white/10'
+                                }`}
                             />
                           ))}
                         </div>
                         <p className={`text-xs ${passwordStrength.color?.replace('bg-', 'text-')}`}>
                           {passwordStrength.label}
                         </p>
-                      </div>
+                      </motion.div>
                     )}
                   </div>
                   <Input
@@ -380,7 +393,7 @@ export default function RegisterPage() {
 
               <Button
                 type="submit"
-                className="w-full"
+                fullWidth
                 loading={loading}
                 icon={ArrowRight}
                 iconPosition="right"
@@ -396,6 +409,7 @@ export default function RegisterPage() {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.3 }}
               onSubmit={handleVerifyOtp}
               className="space-y-6"
             >
@@ -407,41 +421,48 @@ export default function RegisterPage() {
               />
               <Button
                 type="submit"
-                className="w-full"
+                fullWidth
                 loading={loading}
                 icon={ArrowRight}
                 iconPosition="right"
               >
                 Verify & Create Account
               </Button>
-              <button
+              <motion.button
                 type="button"
                 onClick={() => {
                   setStep(1);
                   setOtp('');
                   setError('');
                 }}
-                className="w-full text-sm text-white/60 hover:text-white transition-colors"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="w-full text-sm text-white/50 hover:text-white transition-colors py-2"
               >
                 Change phone number
-              </button>
+              </motion.button>
             </motion.form>
           )}
         </AnimatePresence>
 
         {/* Footer */}
         {step !== 3 && (
-          <div className="mt-8 pt-6 border-t border-white/10 text-center">
-            <p className="text-white/60">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
+            className="mt-8 pt-6 border-t border-white/[0.06] text-center"
+          >
+            <p className="text-white/50">
               Already have an account?{' '}
               <Link
                 to="/login"
-                className="text-violet-400 hover:text-violet-300 font-semibold transition-colors"
+                className="text-orange-400 hover:text-orange-300 font-semibold transition-colors"
               >
                 Sign In
               </Link>
             </p>
-          </div>
+          </motion.div>
         )}
       </Card>
     </AuthLayout>

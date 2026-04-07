@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
+import {
   ArrowLeft,
   BookOpen,
   CheckCircle2,
@@ -30,7 +30,7 @@ export default function QuizRevisionPage() {
   const navigate = useNavigate();
   const { activeProfile, isProfileSessionValid } = useProfile();
   const { isOnline } = useNetworkStatus();
-  
+
   const [quizzes, setQuizzes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -114,7 +114,7 @@ export default function QuizRevisionPage() {
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       const matchesTopic = quiz.topic?.toLowerCase().includes(term);
-      const matchesQuestion = quiz.questions?.some(q => 
+      const matchesQuestion = quiz.questions?.some(q =>
         q.question_text?.toLowerCase().includes(term)
       );
       if (!matchesTopic && !matchesQuestion) return false;
@@ -132,11 +132,12 @@ export default function QuizRevisionPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-violet-950 to-slate-900 overflow-y-auto">
+    <div className="min-h-screen bg-[#050816] overflow-y-auto">
       {/* Animated Background */}
       <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(120,119,198,0.15),transparent_50%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(251,146,60,0.1),transparent_50%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(249,115,22,0.08),transparent_50%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(34,211,238,0.06),transparent_50%)]" />
+        <div className="absolute inset-0 bg-grid-pattern opacity-30" />
       </div>
 
       <div className="relative z-10 max-w-4xl mx-auto px-4 py-6 pb-24">
@@ -186,19 +187,19 @@ export default function QuizRevisionPage() {
               placeholder="Search quizzes or questions..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/40 focus:outline-none focus:border-violet-500/50"
+              className="w-full pl-12 pr-4 py-3 bg-white/[0.02] border border-white/[0.08] rounded-xl text-white placeholder-white/40 focus:outline-none focus:border-orange-500/50 transition-colors"
             />
           </div>
 
           {/* Filter Buttons */}
-          
+
         </motion.div>
 
         {/* Loading State */}
         {loading ? (
-          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8">
+          <div className="glass-card p-8">
             <div className="flex flex-col items-center justify-center">
-              <div className="w-12 h-12 border-4 border-violet-500/30 border-t-violet-500 rounded-full animate-spin mb-4" />
+              <div className="w-12 h-12 border-4 border-orange-500/30 border-t-orange-500 rounded-full animate-spin mb-4" />
               <p className="text-white/50">Loading your quizzes...</p>
             </div>
           </div>
@@ -215,7 +216,7 @@ export default function QuizRevisionPage() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 text-center"
+            className="glass-card p-8 text-center"
           >
             <motion.div
               animate={{ y: [0, -5, 0] }}
@@ -254,7 +255,7 @@ export default function QuizRevisionPage() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.05 * index }}
-                  className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden"
+                  className="glass-card overflow-hidden"
                 >
                   {/* Quiz Header */}
                   <div
@@ -263,13 +264,12 @@ export default function QuizRevisionPage() {
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4">
-                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                          quiz.score >= 70 
-                            ? 'bg-gradient-to-br from-emerald-500 to-teal-600' 
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${quiz.score >= 70
+                            ? 'bg-gradient-to-br from-emerald-500 to-teal-600'
                             : quiz.score >= 40
-                            ? 'bg-gradient-to-br from-amber-500 to-orange-600'
-                            : 'bg-gradient-to-br from-red-500 to-rose-600'
-                        }`}>
+                              ? 'bg-gradient-to-br from-amber-500 to-orange-600'
+                              : 'bg-gradient-to-br from-red-500 to-rose-600'
+                          }`}>
                           <Star className="w-6 h-6 text-white" />
                         </div>
                         <div>
@@ -295,13 +295,12 @@ export default function QuizRevisionPage() {
                       </div>
                       <div className="flex items-center gap-4">
                         <div className="text-right">
-                          <div className={`text-lg font-bold ${
-                            quiz.score >= 70 
-                              ? 'text-emerald-400' 
+                          <div className={`text-lg font-bold ${quiz.score >= 70
+                              ? 'text-emerald-400'
                               : quiz.score >= 40
-                              ? 'text-amber-400'
-                              : 'text-red-400'
-                          }`}>
+                                ? 'text-amber-400'
+                                : 'text-red-400'
+                            }`}>
                             {quiz.score}%
                           </div>
                           <div className="text-xs text-white/50">Score</div>
@@ -337,9 +336,8 @@ export default function QuizRevisionPage() {
                               return (
                                 <div key={qIndex} className="p-4">
                                   <div className="flex items-start gap-3 mb-3">
-                                    <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${
-                                      isCorrect ? 'bg-emerald-500' : 'bg-red-500'
-                                    }`}>
+                                    <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${isCorrect ? 'bg-emerald-500' : 'bg-red-500'
+                                      }`}>
                                       {isCorrect ? (
                                         <CheckCircle2 className="w-4 h-4 text-white" />
                                       ) : (
@@ -359,13 +357,12 @@ export default function QuizRevisionPage() {
                                       return (
                                         <div
                                           key={oIndex}
-                                          className={`p-3 rounded-lg text-sm flex items-center justify-between ${
-                                            isCorrectOption
+                                          className={`p-3 rounded-lg text-sm flex items-center justify-between ${isCorrectOption
                                               ? 'bg-emerald-500/30 border-2 border-emerald-400 text-emerald-200'
                                               : isSelected && !isCorrect
-                                              ? 'bg-red-500/20 border border-red-500/30 text-red-300'
-                                              : 'bg-white/5 border border-white/10 text-white/60'
-                                          }`}
+                                                ? 'bg-red-500/20 border border-red-500/30 text-red-300'
+                                                : 'bg-white/5 border border-white/10 text-white/60'
+                                            }`}
                                         >
                                           <div>
                                             <span className="font-medium mr-2">{optionLetter}.</span>

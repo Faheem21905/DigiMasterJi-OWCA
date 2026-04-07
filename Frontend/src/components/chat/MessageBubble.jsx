@@ -10,12 +10,12 @@ import AudioPlayer from './AudioPlayer';
  */
 function DiagramRenderer({ diagram }) {
   const [expanded, setExpanded] = useState(true); // Default to expanded for better visibility
-  
+
   if (!diagram || !diagram.content) return null;
-  
+
   const isSvg = diagram.type === 'svg';
   const sizeKb = diagram.size_bytes ? (diagram.size_bytes / 1024).toFixed(1) : null;
-  
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -45,11 +45,11 @@ function DiagramRenderer({ diagram }) {
           {expanded ? '⬆ Collapse' : '⬇ Expand'}
         </button>
       </div>
-      
+
       {/* Diagram Content */}
-      <motion.div 
+      <motion.div
         initial={false}
-        animate={{ 
+        animate={{
           height: expanded ? 'auto' : '100px',
           opacity: expanded ? 1 : 0.7
         }}
@@ -58,7 +58,7 @@ function DiagramRenderer({ diagram }) {
       >
         {isSvg ? (
           // SVG Diagram - render inline with better sizing
-          <div 
+          <div
             className="bg-slate-900/60 rounded-xl p-4 overflow-auto border border-white/5"
             dangerouslySetInnerHTML={{ __html: diagram.content }}
             style={{
@@ -71,7 +71,7 @@ function DiagramRenderer({ diagram }) {
           />
         ) : (
           // ASCII Art - render in pre tag with better styling
-          <pre 
+          <pre
             className="bg-slate-900/60 rounded-xl p-4 text-sm font-mono text-emerald-300 overflow-auto whitespace-pre border border-white/5"
             style={{
               lineHeight: '1.4',
@@ -84,14 +84,14 @@ function DiagramRenderer({ diagram }) {
           </pre>
         )}
       </motion.div>
-      
+
       {/* Diagram Type Badge */}
       {diagram.diagram_type && (
         <div className="mt-3 flex items-center gap-2">
           <span className={`
             text-xs px-3 py-1 rounded-full font-medium
-            ${isSvg 
-              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' 
+            ${isSvg
+              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
               : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
             }
           `}>
@@ -111,8 +111,8 @@ function DiagramRenderer({ diagram }) {
  * Displays individual chat messages with different styles for user/assistant
  * Includes integrated audio player for TTS responses
  */
-export default function MessageBubble({ 
-  message, 
+export default function MessageBubble({
+  message,
   isUser = false,
   isTyping = false,
   showAvatar = true,
@@ -142,9 +142,9 @@ export default function MessageBubble({
     }
     const date = new Date(dateStr);
     if (isNaN(date.getTime())) return '';
-    
-    return date.toLocaleTimeString('en-IN', { 
-      hour: 'numeric', 
+
+    return date.toLocaleTimeString('en-IN', {
+      hour: 'numeric',
       minute: '2-digit',
       hour12: true,
       timeZone: 'Asia/Kolkata'
@@ -165,12 +165,11 @@ export default function MessageBubble({
           animate={{ scale: 1 }}
           transition={{ delay: 0.1, type: 'spring', stiffness: 200 }}
           className={`
-            flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center
-            ${isUser 
-              ? 'bg-gradient-to-br from-violet-500 to-indigo-600' 
-              : 'bg-gradient-to-br from-emerald-400 to-teal-500'
+            flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center shadow-lg
+            ${isUser
+              ? 'bg-gradient-to-br from-cyan-500 to-blue-600 shadow-cyan-500/20'
+              : 'bg-gradient-to-br from-orange-500 to-amber-600 shadow-orange-500/20'
             }
-            shadow-lg
           `}
         >
           {isUser ? (
@@ -186,10 +185,10 @@ export default function MessageBubble({
         {/* Bubble */}
         <div
           className={`
-            relative px-4 py-3 rounded-2xl
-            ${isUser 
-              ? 'bg-gradient-to-br from-violet-600 to-indigo-600 text-white rounded-tr-sm' 
-              : 'bg-white/10 backdrop-blur-sm border border-white/10 text-white rounded-tl-sm'
+            relative px-4 py-3 rounded-2xl backdrop-blur-sm
+            ${isUser
+              ? 'bg-gradient-to-br from-cyan-500/20 to-blue-600/20 border border-cyan-500/20 text-white rounded-tr-sm'
+              : 'bg-white/[0.03] border border-white/[0.08] text-white rounded-tl-sm'
             }
           `}
         >
@@ -199,17 +198,17 @@ export default function MessageBubble({
               <motion.span
                 animate={{ opacity: [0.4, 1, 0.4] }}
                 transition={{ duration: 1, repeat: Infinity, delay: 0 }}
-                className="w-2 h-2 bg-white/70 rounded-full"
+                className="w-2 h-2 bg-orange-400 rounded-full"
               />
               <motion.span
                 animate={{ opacity: [0.4, 1, 0.4] }}
                 transition={{ duration: 1, repeat: Infinity, delay: 0.2 }}
-                className="w-2 h-2 bg-white/70 rounded-full"
+                className="w-2 h-2 bg-orange-400 rounded-full"
               />
               <motion.span
                 animate={{ opacity: [0.4, 1, 0.4] }}
                 transition={{ duration: 1, repeat: Infinity, delay: 0.4 }}
-                className="w-2 h-2 bg-white/70 rounded-full"
+                className="w-2 h-2 bg-orange-400 rounded-full"
               />
             </div>
           ) : (
@@ -227,17 +226,17 @@ export default function MessageBubble({
                   // Style ordered lists
                   ol: ({ children }) => <ol className="list-decimal list-inside mb-2 space-y-1">{children}</ol>,
                   // Style list items
-                  li: ({ children }) => <li className="text-white/90">{children}</li>,
+                  li: ({ children }) => <li className="text-white/80">{children}</li>,
                   // Style headings
                   h1: ({ children }) => <h1 className="text-lg font-bold mb-2">{children}</h1>,
                   h2: ({ children }) => <h2 className="text-base font-bold mb-2">{children}</h2>,
                   h3: ({ children }) => <h3 className="text-sm font-bold mb-1">{children}</h3>,
                   // Style code
-                  code: ({ children }) => <code className="bg-white/10 px-1 py-0.5 rounded text-xs">{children}</code>,
+                  code: ({ children }) => <code className="bg-white/[0.08] px-1.5 py-0.5 rounded text-xs text-orange-300">{children}</code>,
                   // Style code blocks
-                  pre: ({ children }) => <pre className="bg-white/10 p-2 rounded-lg overflow-x-auto mb-2">{children}</pre>,
+                  pre: ({ children }) => <pre className="bg-white/[0.05] p-3 rounded-xl overflow-x-auto mb-2 border border-white/[0.05]">{children}</pre>,
                   // Style blockquotes
-                  blockquote: ({ children }) => <blockquote className="border-l-2 border-white/30 pl-3 italic text-white/80">{children}</blockquote>,
+                  blockquote: ({ children }) => <blockquote className="border-l-2 border-orange-400/50 pl-3 italic text-white/70">{children}</blockquote>,
                 }}
               >
                 {message.content}
@@ -247,8 +246,8 @@ export default function MessageBubble({
 
           {/* Translated Content (if available) */}
           {message.content_translated && !isTyping && (
-            <div className="mt-2 pt-2 border-t border-white/10">
-              <p className="text-xs text-white/60 italic">
+            <div className="mt-2 pt-2 border-t border-white/[0.08]">
+              <p className="text-xs text-white/50 italic">
                 {message.content_translated}
               </p>
             </div>
@@ -264,9 +263,9 @@ export default function MessageBubble({
         {!isUser && !isTyping && (message.audio_url || message.audio_base64) && showAudioPlayer && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
-            animate={{ 
-              opacity: audioExpanded ? 1 : 0.9, 
-              height: 'auto' 
+            animate={{
+              opacity: audioExpanded ? 1 : 0.9,
+              height: 'auto'
             }}
             className="mt-2 w-full max-w-full overflow-hidden"
             style={{ contain: 'layout' }}
@@ -278,7 +277,7 @@ export default function MessageBubble({
                   audioUrl={message.audio_url}
                   audioBase64={message.audio_base64}
                   format={message.audio_format || 'mp3'}
-                  accentColor="emerald"
+                  accentColor="orange"
                 />
               </div>
             ) : (
@@ -289,52 +288,48 @@ export default function MessageBubble({
                   audioBase64={message.audio_base64}
                   format={message.audio_format || 'mp3'}
                   compact={true}
-                  accentColor="emerald"
+                  accentColor="orange"
                 />
               </div>
             )}
-            
-            {/* Toggle expand button */}
-            {/* <button
-              onClick={() => setAudioExpanded(!audioExpanded)}
-              className="mt-1 text-xs text-white/40 hover:text-white/60 transition-colors"
-            >
-              {audioExpanded ? 'Collapse' : 'Expand'}
-            </button> */}
           </motion.div>
         )}
 
         {/* Message Meta & Actions */}
         {!isTyping && (
           <div className={`flex items-center gap-2 mt-1 px-1 ${isUser ? 'flex-row-reverse' : ''}`}>
-            <span className="text-xs text-white/40">
+            <span className="text-xs text-white/30">
               {formatTime(message.timestamp)}
             </span>
-            
+
             {/* Action Buttons (only for assistant messages) */}
             {!isUser && (
               <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
                   onClick={handleCopy}
-                  className="p-1 rounded-lg hover:bg-white/10 transition-colors"
+                  className="p-1 rounded-lg hover:bg-white/[0.05] transition-colors"
                   title="Copy message"
                 >
                   {copied ? (
                     <Check className="w-3.5 h-3.5 text-emerald-400" />
                   ) : (
-                    <Copy className="w-3.5 h-3.5 text-white/40 hover:text-white/70" />
+                    <Copy className="w-3.5 h-3.5 text-white/30 hover:text-white/60" />
                   )}
-                </button>
-                
+                </motion.button>
+
                 {/* Audio toggle button (if audio available but player hidden) */}
                 {(message.audio_url || message.audio_base64) && !showAudioPlayer && onPlayAudio && (
-                  <button
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
                     onClick={() => onPlayAudio(message.audio_url || message.audio_base64)}
-                    className="p-1 rounded-lg hover:bg-white/10 transition-colors"
+                    className="p-1 rounded-lg hover:bg-white/[0.05] transition-colors"
                     title="Play audio"
                   >
-                    <Volume2 className="w-3.5 h-3.5 text-white/40 hover:text-white/70" />
-                  </button>
+                    <Volume2 className="w-3.5 h-3.5 text-white/30 hover:text-white/60" />
+                  </motion.button>
                 )}
               </div>
             )}

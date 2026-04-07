@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Plus, 
-  Search, 
-  MessageSquare, 
+import {
+  Plus,
+  Search,
+  MessageSquare,
   ChevronLeft,
   Clock,
   BookOpen,
@@ -69,7 +69,7 @@ export default function ChatSidebar({
       groups['Older'].push(conv);
       return groups;
     }
-    
+
     const today = new Date();
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
@@ -97,7 +97,7 @@ export default function ChatSidebar({
     if (!timestamp) return '';
     const date = parseUTCTimestamp(timestamp);
     if (!date || isNaN(date.getTime())) return '';
-    
+
     const now = new Date();
     const diff = now - date;
     const minutes = Math.floor(diff / 60000);
@@ -122,14 +122,14 @@ export default function ChatSidebar({
       <motion.div
         initial={{ width: 280 }}
         animate={{ width: 72 }}
-        className="flex-shrink-0 h-full border-r border-white/10 bg-white/5 backdrop-blur-sm flex flex-col"
+        className="flex-shrink-0 h-full border-r border-white/[0.05] bg-[#0a0f1e]/80 backdrop-blur-xl flex flex-col"
       >
         <div className="p-4 flex flex-col items-center gap-4">
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={onToggleCollapse}
-            className="p-3 rounded-xl bg-white/10 text-white/70 hover:bg-white/20 hover:text-white transition-all"
+            className="p-3 rounded-xl bg-white/[0.05] text-white/50 hover:bg-white/[0.1] hover:text-white transition-all"
           >
             <ChevronLeft className="w-5 h-5 rotate-180" />
           </motion.button>
@@ -138,7 +138,7 @@ export default function ChatSidebar({
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={onNewConversation}
-            className="p-3 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-lg shadow-violet-500/30"
+            className="p-3 rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-500/30"
           >
             <Plus className="w-5 h-5" />
           </motion.button>
@@ -148,7 +148,7 @@ export default function ChatSidebar({
           {conversations.slice(0, 10).map((conv) => {
             const Icon = getSubjectIcon(conv.subject_tag);
             const isActive = conv._id === activeConversationId || conv.id === activeConversationId;
-            
+
             return (
               <motion.button
                 key={conv._id || conv.id}
@@ -156,9 +156,9 @@ export default function ChatSidebar({
                 onClick={() => onSelectConversation(conv)}
                 className={`
                   w-full p-3 flex items-center justify-center
-                  ${isActive 
-                    ? 'bg-violet-500/20 text-violet-300' 
-                    : 'text-white/60 hover:bg-white/10 hover:text-white'
+                  ${isActive
+                    ? 'bg-orange-500/20 text-orange-300'
+                    : 'text-white/50 hover:bg-white/[0.05] hover:text-white'
                   }
                   transition-all
                 `}
@@ -177,29 +177,31 @@ export default function ChatSidebar({
     <motion.div
       initial={{ width: 72 }}
       animate={{ width: 280 }}
-      className="flex-shrink-0 h-full border-r border-white/10 bg-white/5 backdrop-blur-sm flex flex-col"
+      className="flex-shrink-0 h-full border-r border-white/[0.05] bg-[#0a0f1e]/80 backdrop-blur-xl flex flex-col"
     >
       {/* Header */}
-      <div className="p-4 border-b border-white/10">
+      <div className="p-4 border-b border-white/[0.05]">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <MessageSquare className="w-5 h-5 text-violet-400" />
+            <MessageSquare className="w-5 h-5 text-orange-400" />
             <h2 className="font-semibold text-white">Chats</h2>
           </div>
-          <button
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
             onClick={onToggleCollapse}
-            className="p-2 rounded-lg text-white/40 hover:text-white/70 hover:bg-white/10 transition-all"
+            className="p-2 rounded-lg text-white/30 hover:text-white/60 hover:bg-white/[0.05] transition-all"
           >
             <ChevronLeft className="w-4 h-4" />
-          </button>
+          </motion.button>
         </div>
 
         {/* New Chat Button */}
         <motion.button
-          whileHover={{ scale: 1.02 }}
+          whileHover={{ scale: 1.02, y: -1 }}
           whileTap={{ scale: 0.98 }}
           onClick={onNewConversation}
-          className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-medium shadow-lg shadow-violet-500/30 hover:from-violet-700 hover:to-indigo-700 transition-all"
+          className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 text-white font-medium shadow-lg shadow-orange-500/30 hover:from-orange-400 hover:to-orange-500 transition-all"
         >
           <Plus className="w-5 h-5" />
           New Chat
@@ -209,13 +211,13 @@ export default function ChatSidebar({
       {/* Search */}
       <div className="px-4 py-3">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
           <input
             type="text"
             placeholder="Search conversations..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm text-white placeholder-white/40 focus:outline-none focus:border-violet-500/50 focus:bg-white/10 transition-all"
+            className="w-full pl-10 pr-4 py-2.5 bg-white/[0.03] border border-white/[0.08] rounded-xl text-sm text-white placeholder-white/30 focus:outline-none focus:border-orange-500/50 focus:bg-white/[0.05] transition-all"
           />
         </div>
       </div>
@@ -224,15 +226,15 @@ export default function ChatSidebar({
       <div className="flex-1 overflow-y-auto px-2 pb-4 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
-            <div className="w-8 h-8 border-2 border-violet-500/30 border-t-violet-500 rounded-full animate-spin" />
+            <div className="w-8 h-8 border-2 border-orange-500/30 border-t-orange-500 rounded-full animate-spin" />
           </div>
         ) : filteredConversations.length === 0 ? (
           <div className="text-center py-12 px-4">
-            <MessageSquare className="w-12 h-12 text-white/20 mx-auto mb-3" />
-            <p className="text-white/40 text-sm">
+            <MessageSquare className="w-12 h-12 text-white/10 mx-auto mb-3" />
+            <p className="text-white/30 text-sm">
               {searchQuery ? 'No matching conversations' : 'No conversations yet'}
             </p>
-            <p className="text-white/30 text-xs mt-1">
+            <p className="text-white/20 text-xs mt-1">
               {searchQuery ? 'Try a different search' : 'Start a new chat to begin learning!'}
             </p>
           </div>
@@ -240,8 +242,8 @@ export default function ChatSidebar({
           Object.entries(groupedConversations).map(([group, convs]) => (
             <div key={group} className="mb-4">
               <div className="flex items-center gap-2 px-3 py-2">
-                <Clock className="w-3 h-3 text-white/30" />
-                <span className="text-xs font-medium text-white/40 uppercase tracking-wider">
+                <Clock className="w-3 h-3 text-white/20" />
+                <span className="text-xs font-medium text-white/30 uppercase tracking-wider">
                   {group}
                 </span>
               </div>
@@ -262,56 +264,60 @@ export default function ChatSidebar({
                       onMouseLeave={() => setHoveredId(null)}
                       className="relative"
                     >
-                      <button
+                      <motion.button
+                        whileHover={{ x: 2 }}
                         onClick={() => onSelectConversation(conv)}
                         className={`
                           w-full flex items-start gap-3 px-3 py-3 rounded-xl
-                          text-left transition-all duration-200
-                          ${isActive 
-                            ? 'bg-violet-500/20 border border-violet-500/30' 
-                            : 'hover:bg-white/10 border border-transparent'
+                          text-left transition-all duration-300
+                          ${isActive
+                            ? 'bg-orange-500/10 border border-orange-500/20'
+                            : 'hover:bg-white/[0.03] border border-transparent'
                           }
                         `}
                       >
                         {/* Icon */}
                         <div className={`
                           flex-shrink-0 w-9 h-9 rounded-lg flex items-center justify-center
-                          ${isActive 
-                            ? 'bg-violet-500/30 text-violet-300' 
-                            : 'bg-white/10 text-white/60'
+                          ${isActive
+                            ? 'bg-orange-500/20 text-orange-300'
+                            : 'bg-white/[0.05] text-white/50'
                           }
+                          transition-all duration-300
                         `}>
                           <Icon className="w-4 h-4" />
                         </div>
 
                         {/* Content */}
                         <div className="flex-1 min-w-0">
-                          <h3 className={`font-medium text-sm truncate ${isActive ? 'text-white' : 'text-white/80'}`}>
+                          <h3 className={`font-medium text-sm truncate ${isActive ? 'text-white' : 'text-white/70'}`}>
                             {conv.title || 'New Conversation'}
                           </h3>
                           <div className="flex items-center gap-2 mt-0.5">
                             {conv.subject_tag && (
-                              <span className="text-xs text-violet-400/70">
+                              <span className="text-xs text-orange-400/60">
                                 {conv.subject_tag}
                               </span>
                             )}
-                            <span className="text-xs text-white/30">
+                            <span className="text-xs text-white/25">
                               {formatTime(conv.updated_at || conv.created_at)}
                             </span>
                           </div>
                           {conv.message_count > 0 && (
-                            <span className="text-xs text-white/30">
+                            <span className="text-xs text-white/25">
                               {conv.message_count} message{conv.message_count !== 1 ? 's' : ''}
                             </span>
                           )}
                         </div>
-                      </button>
+                      </motion.button>
 
                       {/* Delete button on hover */}
                       {isHovered && onDeleteConversation && (
                         <motion.button
                           initial={{ opacity: 0, scale: 0.8 }}
                           animate={{ opacity: 1, scale: 1 }}
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
                           onClick={(e) => {
                             e.stopPropagation();
                             onDeleteConversation(conv);

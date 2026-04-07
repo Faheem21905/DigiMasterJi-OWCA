@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
+import {
   ArrowLeft,
   Trophy,
   Medal,
@@ -28,7 +28,7 @@ import { quizzesApi } from '../../api/quizzes';
 export default function GamificationDashboard() {
   const navigate = useNavigate();
   const { activeProfile, isProfileSessionValid } = useProfile();
-  
+
   const [leaderboard, setLeaderboard] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -97,11 +97,12 @@ export default function GamificationDashboard() {
   const currentLevel = Math.floor(gamification.xp / xpPerLevel) + 1;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-violet-950 to-slate-900 overflow-y-auto">
+    <div className="min-h-screen bg-[#050816] overflow-y-auto">
       {/* Animated Background */}
       <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(120,119,198,0.15),transparent_50%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(251,146,60,0.1),transparent_50%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(249,115,22,0.08),transparent_50%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(34,211,238,0.06),transparent_50%)]" />
+        <div className="absolute inset-0 bg-grid-pattern opacity-30" />
       </div>
 
       <div className="relative z-10 max-w-4xl mx-auto px-4 py-6 pb-24">
@@ -168,11 +169,13 @@ export default function GamificationDashboard() {
           transition={{ delay: 0.3 }}
           className="grid grid-cols-2 gap-3 mb-8"
         >
-          <button
+          <motion.button
+            whileHover={{ scale: 1.02, y: -2 }}
+            whileTap={{ scale: 0.98 }}
             onClick={() => navigate('/quiz')}
-            className="p-4 rounded-2xl bg-gradient-to-br from-violet-500/20 to-indigo-500/10 border border-violet-500/20 hover:border-violet-400/40 transition-all flex items-center gap-3"
+            className="p-4 rounded-2xl glass-card border-orange-500/20 hover:border-orange-500/40 transition-all flex items-center gap-3"
           >
-            <div className="w-10 h-10 rounded-xl bg-violet-500 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-orange-500 flex items-center justify-center">
               <BookOpen className="w-5 h-5 text-white" />
             </div>
             <div className="text-left">
@@ -180,11 +183,13 @@ export default function GamificationDashboard() {
               <div className="text-xs text-white/50">Test your knowledge</div>
             </div>
             <ChevronRight className="w-5 h-5 text-white/40 ml-auto" />
-          </button>
+          </motion.button>
 
-          <button
+          <motion.button
+            whileHover={{ scale: 1.02, y: -2 }}
+            whileTap={{ scale: 0.98 }}
             onClick={() => navigate('/insights')}
-            className="p-4 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-500/10 border border-cyan-500/20 hover:border-cyan-400/40 transition-all flex items-center gap-3"
+            className="p-4 rounded-2xl glass-card border-cyan-500/20 hover:border-cyan-500/40 transition-all flex items-center gap-3"
           >
             <div className="w-10 h-10 rounded-xl bg-cyan-500 flex items-center justify-center">
               <Brain className="w-5 h-5 text-white" />
@@ -194,11 +199,13 @@ export default function GamificationDashboard() {
               <div className="text-xs text-white/50">AI-powered analytics</div>
             </div>
             <ChevronRight className="w-5 h-5 text-white/40 ml-auto" />
-          </button>
+          </motion.button>
 
-          <button
+          <motion.button
+            whileHover={{ scale: 1.02, y: -2 }}
+            whileTap={{ scale: 0.98 }}
             onClick={() => navigate('/quiz/revision')}
-            className="p-4 rounded-2xl bg-gradient-to-br from-amber-500/20 to-orange-500/10 border border-amber-500/20 hover:border-amber-400/40 transition-all flex items-center gap-3"
+            className="p-4 rounded-2xl glass-card border-amber-500/20 hover:border-amber-500/40 transition-all flex items-center gap-3"
           >
             <div className="w-10 h-10 rounded-xl bg-amber-500 flex items-center justify-center">
               <Award className="w-5 h-5 text-white" />
@@ -208,11 +215,13 @@ export default function GamificationDashboard() {
               <div className="text-xs text-white/50">Review past quizzes</div>
             </div>
             <ChevronRight className="w-5 h-5 text-white/40 ml-auto" />
-          </button>
+          </motion.button>
 
-          <button
+          <motion.button
+            whileHover={{ scale: 1.02, y: -2 }}
+            whileTap={{ scale: 0.98 }}
             onClick={() => navigate('/chat')}
-            className="p-4 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-teal-500/10 border border-emerald-500/20 hover:border-emerald-400/40 transition-all flex items-center gap-3"
+            className="p-4 rounded-2xl glass-card border-emerald-500/20 hover:border-emerald-500/40 transition-all flex items-center gap-3"
           >
             <div className="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center">
               <Target className="w-5 h-5 text-white" />
@@ -222,7 +231,7 @@ export default function GamificationDashboard() {
               <div className="text-xs text-white/50">Ask DigiMasterJi</div>
             </div>
             <ChevronRight className="w-5 h-5 text-white/40 ml-auto" />
-          </button>
+          </motion.button>
         </motion.div>
 
         {/* Badges Section */}
@@ -248,20 +257,20 @@ export default function GamificationDashboard() {
                   whileHover={{ scale: 1.05 }}
                   className="relative group"
                 >
-                  <div className="p-4 rounded-2xl bg-white/5 border border-white/10 text-center hover:border-amber-500/30 transition-all">
+                  <div className="p-4 rounded-2xl glass-card text-center hover:border-amber-500/30 transition-all">
                     <div className="text-3xl mb-2">{badge.emoji}</div>
                     <div className="text-xs font-medium text-white truncate">{badge.name}</div>
                   </div>
-                  
+
                   {/* Tooltip */}
-                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-slate-800 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-[#0d1224] border border-white/10 rounded-lg text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
                     {badge.description}
                   </div>
                 </motion.div>
               ))}
             </div>
           ) : (
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-8 text-center">
+            <div className="glass-card p-8 text-center">
               <motion.div
                 animate={{ y: [0, -5, 0] }}
                 transition={{ duration: 2, repeat: Infinity }}
@@ -284,22 +293,22 @@ export default function GamificationDashboard() {
           transition={{ delay: 0.5 }}
         >
           <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-            <Users className="w-5 h-5 text-violet-400" />
+            <Users className="w-5 h-5 text-cyan-400" />
             Family Leaderboard
           </h2>
 
           {loading ? (
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-8 text-center">
-              <div className="w-8 h-8 border-2 border-violet-500/30 border-t-violet-500 rounded-full animate-spin mx-auto" />
+            <div className="glass-card p-8 text-center">
+              <div className="w-8 h-8 border-2 border-orange-500/30 border-t-orange-500 rounded-full animate-spin mx-auto" />
             </div>
           ) : leaderboard.length > 0 ? (
             <div className="space-y-2">
               {leaderboard.map((entry, index) => {
                 const isCurrentUser = entry.profile_id === (activeProfile?._id || activeProfile?.id);
-                const rankIcon = index === 0 ? <Crown className="w-5 h-5 text-amber-400" /> 
+                const rankIcon = index === 0 ? <Crown className="w-5 h-5 text-amber-400" />
                   : index === 1 ? <Medal className="w-5 h-5 text-slate-300" />
-                  : index === 2 ? <Medal className="w-5 h-5 text-amber-600" />
-                  : null;
+                    : index === 2 ? <Medal className="w-5 h-5 text-amber-600" />
+                      : null;
 
                 return (
                   <motion.div
@@ -307,11 +316,12 @@ export default function GamificationDashboard() {
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.1 * index }}
+                    whileHover={{ scale: 1.01, x: 4 }}
                     className={`
-                      p-4 rounded-2xl flex items-center gap-4
-                      ${isCurrentUser 
-                        ? 'bg-gradient-to-r from-violet-500/20 to-indigo-500/10 border-2 border-violet-500/30' 
-                        : 'bg-white/5 border border-white/10'
+                      p-4 rounded-2xl flex items-center gap-4 transition-all
+                      ${isCurrentUser
+                        ? 'bg-orange-500/10 border-2 border-orange-500/30'
+                        : 'glass-card'
                       }
                     `}
                   >
@@ -320,8 +330,8 @@ export default function GamificationDashboard() {
                       w-10 h-10 rounded-xl flex items-center justify-center font-bold
                       ${index === 0 ? 'bg-amber-500/20 text-amber-400' :
                         index === 1 ? 'bg-slate-400/20 text-slate-300' :
-                        index === 2 ? 'bg-amber-600/20 text-amber-600' :
-                        'bg-white/10 text-white/60'
+                          index === 2 ? 'bg-amber-600/20 text-amber-600' :
+                            'bg-white/10 text-white/60'
                       }
                     `}>
                       {rankIcon || (index + 1)}
@@ -332,7 +342,7 @@ export default function GamificationDashboard() {
                       <div className="font-medium text-white flex items-center gap-2">
                         {entry.name}
                         {isCurrentUser && (
-                          <span className="text-xs px-2 py-0.5 bg-violet-500/20 text-violet-400 rounded-full">
+                          <span className="text-xs px-2 py-0.5 bg-orange-500/20 text-orange-400 rounded-full">
                             You
                           </span>
                         )}
@@ -344,7 +354,7 @@ export default function GamificationDashboard() {
 
                     {/* Stats */}
                     <div className="text-right">
-                      <div className="font-bold text-violet-400">{entry.xp} XP</div>
+                      <div className="font-bold text-cyan-400">{entry.xp} XP</div>
                       <div className="text-xs text-orange-400 flex items-center justify-end gap-1">
                         🔥 {entry.streak}
                       </div>
@@ -354,7 +364,7 @@ export default function GamificationDashboard() {
               })}
             </div>
           ) : (
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-8 text-center">
+            <div className="glass-card p-8 text-center">
               <Trophy className="w-12 h-12 text-white/20 mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-white mb-2">No Rankings Yet</h3>
               <p className="text-sm text-white/50">
@@ -371,8 +381,8 @@ export default function GamificationDashboard() {
           transition={{ delay: 0.7 }}
           className="mt-8 text-center"
         >
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/5 rounded-full">
-            <Sparkles className="w-4 h-4 text-violet-400" />
+          <div className="inline-flex items-center gap-2 px-4 py-2 glass rounded-full">
+            <Sparkles className="w-4 h-4 text-orange-400" />
             <span className="text-sm text-white/60">
               Keep learning to unlock more achievements!
             </span>

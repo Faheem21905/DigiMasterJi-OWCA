@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  ArrowLeft, 
-  ArrowRight, 
-  Check, 
-  User, 
+import {
+  ArrowLeft,
+  ArrowRight,
+  Check,
+  User,
   GraduationCap,
   Sparkles,
   Languages
@@ -173,20 +173,22 @@ export default function CreateProfilePage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-violet-950 to-slate-950 relative overflow-hidden">
+    <div className="min-h-screen bg-[#050816] relative overflow-hidden">
       {/* Animated Background */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(249,115,22,0.08),transparent_50%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(34,211,238,0.06),transparent_50%)]" />
+        <div className="absolute inset-0 bg-grid-pattern opacity-30" />
         <motion.div
           animate={{ x: [0, 100, 0], y: [0, -50, 0] }}
           transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
-          className="absolute -top-40 -left-40 w-[500px] h-[500px] bg-violet-600/20 rounded-full blur-3xl"
+          className="absolute -top-40 -left-40 w-[500px] h-[500px] bg-orange-500/10 rounded-full blur-3xl"
         />
         <motion.div
           animate={{ x: [0, -50, 0], y: [0, 100, 0] }}
           transition={{ duration: 25, repeat: Infinity, ease: 'linear' }}
-          className="absolute -bottom-40 -right-40 w-[500px] h-[500px] bg-indigo-600/20 rounded-full blur-3xl"
+          className="absolute -bottom-40 -right-40 w-[500px] h-[500px] bg-cyan-500/10 rounded-full blur-3xl"
         />
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:50px_50px]" />
       </div>
 
       {/* Header */}
@@ -222,10 +224,10 @@ export default function CreateProfilePage() {
                   className={`
                     flex items-center gap-2 px-4 py-2 rounded-full
                     ${step === s.number
-                      ? 'bg-gradient-to-r from-violet-600 to-indigo-600 shadow-lg shadow-violet-500/30'
+                      ? 'bg-gradient-to-r from-orange-500 to-amber-600 shadow-lg shadow-orange-500/30'
                       : step > s.number
                         ? 'bg-emerald-500/20'
-                        : 'bg-white/5'
+                        : 'bg-white/[0.05]'
                     }
                   `}
                 >
@@ -239,16 +241,14 @@ export default function CreateProfilePage() {
                       <Icon className={`w-4 h-4 ${step >= s.number ? 'text-white' : 'text-white/40'}`} />
                     )}
                   </div>
-                  <span className={`text-sm font-medium hidden sm:block ${
-                    step >= s.number ? 'text-white' : 'text-white/40'
-                  }`}>
+                  <span className={`text-sm font-medium hidden sm:block ${step >= s.number ? 'text-white' : 'text-white/40'
+                    }`}>
                     {s.label}
                   </span>
                 </motion.div>
                 {index < steps.length - 1 && (
-                  <div className={`w-8 h-0.5 mx-2 rounded ${
-                    step > s.number ? 'bg-emerald-500' : 'bg-white/10'
-                  }`} />
+                  <div className={`w-8 h-0.5 mx-2 rounded ${step > s.number ? 'bg-emerald-500' : 'bg-white/10'
+                    }`} />
                 )}
               </div>
             );
@@ -256,7 +256,7 @@ export default function CreateProfilePage() {
         </div>
 
         {/* Form Card */}
-        <Card className="w-full max-w-lg p-8">
+        <Card variant="glass" className="w-full max-w-lg p-8">
           {/* Error Message */}
           <AnimatePresence mode="wait">
             {error && (
@@ -330,8 +330,8 @@ export default function CreateProfilePage() {
                       className={`
                         p-4 rounded-xl text-center transition-all duration-200
                         ${formData.grade === grade.value
-                          ? 'bg-gradient-to-br from-violet-600 to-indigo-600 shadow-lg shadow-violet-500/30'
-                          : 'bg-white/5 border border-white/10 hover:bg-white/10'
+                          ? 'bg-gradient-to-br from-orange-500 to-amber-600 shadow-lg shadow-orange-500/30'
+                          : 'bg-white/[0.05] border border-white/[0.08] hover:bg-white/[0.08]'
                         }
                       `}
                     >
@@ -366,8 +366,8 @@ export default function CreateProfilePage() {
                       className={`
                         p-4 rounded-xl text-left transition-all duration-200
                         ${formData.language === lang.value
-                          ? 'bg-gradient-to-br from-violet-600 to-indigo-600 shadow-lg shadow-violet-500/30'
-                          : 'bg-white/5 border border-white/10 hover:bg-white/10'
+                          ? 'bg-gradient-to-br from-orange-500 to-amber-600 shadow-lg shadow-orange-500/30'
+                          : 'bg-white/[0.05] border border-white/[0.08] hover:bg-white/[0.08]'
                         }
                       `}
                     >
@@ -433,7 +433,7 @@ export default function CreateProfilePage() {
                 </div>
 
                 {/* Summary */}
-                <div className="mt-8 p-4 bg-white/5 rounded-xl">
+                <div className="mt-8 p-4 bg-white/[0.05] rounded-xl border border-white/[0.08]">
                   <h3 className="text-sm font-semibold text-white/60 mb-3">Profile Summary</h3>
                   <div className="space-y-2 text-white">
                     <div className="flex justify-between">
@@ -467,27 +467,29 @@ export default function CreateProfilePage() {
                 variant="secondary"
                 onClick={handleBack}
                 icon={ArrowLeft}
-                className="flex-1"
+                fullWidth
               >
                 Back
               </Button>
             )}
             {step < 4 ? (
               <Button
+                variant="primary"
                 onClick={handleNext}
                 icon={ArrowRight}
                 iconPosition="right"
-                className="flex-1"
+                fullWidth
               >
                 Continue
               </Button>
             ) : (
               <Button
+                variant="glow"
                 onClick={handleSubmit}
                 loading={loading}
                 icon={Check}
                 iconPosition="right"
-                className="flex-1"
+                fullWidth
               >
                 Create Profile
               </Button>

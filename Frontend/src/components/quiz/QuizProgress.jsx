@@ -20,13 +20,13 @@ export default function QuizProgress({
       {/* Progress Bar */}
       <div className="relative">
         {/* Background Track */}
-        <div className="h-3 bg-white/10 rounded-full overflow-hidden backdrop-blur-sm">
+        <div className="h-3 bg-white/[0.08] rounded-full overflow-hidden backdrop-blur-sm">
           {/* Animated Progress Fill */}
           <motion.div
             initial={{ width: 0 }}
             animate={{ width: `${progressPercentage}%` }}
             transition={{ type: 'spring', stiffness: 100, damping: 20 }}
-            className="h-full bg-gradient-to-r from-violet-500 via-indigo-500 to-purple-500 rounded-full relative"
+            className="h-full bg-gradient-to-r from-orange-500 via-orange-400 to-cyan-500 rounded-full relative"
           >
             {/* Shimmer Effect */}
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer" />
@@ -38,7 +38,7 @@ export default function QuizProgress({
           <span className="text-sm text-white/60">
             Progress: {currentQuestion}/{totalQuestions}
           </span>
-          <span className="text-sm font-medium text-violet-400">
+          <span className="text-sm font-medium text-orange-400">
             {Math.round(progressPercentage)}% Complete
           </span>
         </div>
@@ -62,15 +62,15 @@ export default function QuizProgress({
               className={`
                 w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold
                 transition-all duration-300 ease-out
-                ${isCurrent 
-                  ? 'bg-gradient-to-br from-violet-500 to-indigo-600 text-white shadow-lg shadow-violet-500/40 scale-110' 
-                  : isCorrect 
+                ${isCurrent
+                  ? 'bg-gradient-to-br from-orange-500 to-cyan-600 text-white shadow-lg shadow-orange-500/40 scale-110'
+                  : isCorrect
                     ? 'bg-emerald-500/20 border-2 border-emerald-500 text-emerald-400'
                     : isWrong
                       ? 'bg-red-500/20 border-2 border-red-500 text-red-400'
-                      : isAnswered 
-                        ? 'bg-violet-500/20 border-2 border-violet-500 text-violet-400' 
-                        : 'bg-white/5 border-2 border-white/20 text-white/40'
+                      : isAnswered
+                        ? 'bg-orange-500/20 border-2 border-orange-500 text-orange-400'
+                        : 'bg-white/[0.02] border-2 border-white/[0.15] text-white/40'
                 }
               `}
             >
