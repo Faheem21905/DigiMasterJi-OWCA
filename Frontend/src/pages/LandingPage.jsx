@@ -166,7 +166,7 @@ const content = {
           items: ['Help Center', 'Privacy Policy', 'Terms of Service'],
         },
       },
-      copyright: '© 2025 DigiMasterJi. Made with ❤️ for learners everywhere.',
+      copyright: '© 2026 DigiMasterJi. Made with ❤️ for learners everywhere.',
     },
   },
   hi: {
@@ -311,7 +311,7 @@ const content = {
           items: ['हेल्प सेंटर', 'गोपनीयता नीति', 'सेवा की शर्तें'],
         },
       },
-      copyright: '© 2025 DigiMasterJi. हर जगह शिक्षार्थियों के लिए ❤️ से बनाया।',
+      copyright: '© 2026 DigiMasterJi. हर जगह शिक्षार्थियों के लिए ❤️ से बनाया।',
     },
   },
 };
@@ -401,14 +401,14 @@ function FAQItem({ question, answer, isOpen, onClick }) {
 function Float3D({ children, delay = 0, duration = 6, className = '' }) {
   return (
     <motion.div
-      animate={{ 
+      animate={{
         y: [0, -20, 0],
         rotateY: [0, 10, 0],
         rotateX: [0, 5, 0],
       }}
-      transition={{ 
-        duration, 
-        repeat: Infinity, 
+      transition={{
+        duration,
+        repeat: Infinity,
         delay,
         ease: 'easeInOut'
       }}
@@ -454,7 +454,7 @@ export default function LandingPage() {
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         {/* Gradient Mesh */}
         <div className="absolute inset-0 bg-gradient-mesh opacity-50" />
-        
+
         {/* Animated Orbs */}
         <motion.div
           animate={{
@@ -482,10 +482,10 @@ export default function LandingPage() {
           transition={{ duration: 15, repeat: Infinity, ease: 'linear' }}
           className="absolute top-1/3 right-1/4 w-[400px] h-[400px] bg-blue-500/5 rounded-full blur-[100px]"
         />
-        
+
         {/* Grid Pattern */}
         <div className="absolute inset-0 bg-grid-pattern opacity-20" />
-        
+
         {/* Glowing Lines */}
         <motion.div
           animate={{ opacity: [0.1, 0.3, 0.1] }}
@@ -498,11 +498,10 @@ export default function LandingPage() {
       <motion.nav
         initial={{ y: -100 }}
         animate={{ y: 0 }}
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-          scrolled 
-            ? 'bg-[#050816]/80 backdrop-blur-xl border-b border-white/[0.05]' 
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${scrolled
+            ? 'bg-[#050816]/80 backdrop-blur-xl border-b border-white/[0.05]'
             : ''
-        }`}
+          }`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
           <div className="flex items-center justify-between">
@@ -629,7 +628,7 @@ export default function LandingPage() {
 
       {/* Hero Section */}
       <section ref={heroRef} className="relative z-10 min-h-screen flex items-center pt-20">
-        <motion.div 
+        <motion.div
           style={{ opacity: heroOpacity, scale: heroScale, y: heroY }}
           className="w-full px-4 sm:px-6 py-20"
         >
@@ -708,7 +707,7 @@ export default function LandingPage() {
                 >
                   {t.hero.stats.map((stat, index) => (
                     <div key={index} className="text-center lg:text-left">
-                      <motion.div 
+                      <motion.div
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
                         transition={{ delay: 0.7 + index * 0.1, type: 'spring' }}
@@ -875,9 +874,9 @@ export default function LandingPage() {
                 >
                   {/* Hover Glow */}
                   <div className={`absolute inset-0 rounded-3xl ${colors.bg} opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-500`} />
-                  
+
                   <div className="relative">
-                    <motion.div 
+                    <motion.div
                       whileHover={{ scale: 1.1, rotate: 5 }}
                       className={`w-14 h-14 ${colors.bg} rounded-2xl flex items-center justify-center mb-6 border ${colors.border}`}
                     >
@@ -938,10 +937,10 @@ export default function LandingPage() {
                     <Star key={i} className="w-5 h-5 text-amber-400 fill-amber-400" />
                   ))}
                 </div>
-                
+
                 {/* Content */}
                 <p className="text-white/70 leading-relaxed mb-6">"{testimonial.content}"</p>
-                
+
                 {/* Author */}
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 bg-gradient-to-br from-orange-500/20 to-cyan-500/20 rounded-full flex items-center justify-center text-2xl">
@@ -1021,7 +1020,7 @@ export default function LandingPage() {
               transition={{ duration: 5, repeat: Infinity, delay: 1 }}
               className="absolute bottom-0 right-1/4 w-64 h-64 bg-cyan-500/20 rounded-full blur-[100px]"
             />
-            
+
             <div className="relative z-10">
               <motion.div
                 animate={{ y: [0, -10, 0], rotate: [0, 5, 0] }}
@@ -1034,7 +1033,7 @@ export default function LandingPage() {
                 {language === 'en' ? 'Ready to Start Learning?' : 'सीखना शुरू करने के लिए तैयार?'}
               </h2>
               <p className="text-white/50 text-lg mb-10 max-w-xl mx-auto">
-                {language === 'en' 
+                {language === 'en'
                   ? 'Join thousands of students who are learning smarter with DigiMasterJi. It\'s free to get started!'
                   : 'हजारों छात्रों से जुड़ें जो DigiMasterJi के साथ स्मार्ट तरीके से सीख रहे हैं। शुरू करना मुफ्त है!'
                 }
@@ -1088,8 +1087,8 @@ export default function LandingPage() {
               <ul className="space-y-3">
                 {t.footer.links.product.items.map((item, i) => (
                   <li key={i}>
-                    <motion.a 
-                      href="#" 
+                    <motion.a
+                      href="#"
                       whileHover={{ x: 3 }}
                       className="text-white/40 hover:text-white text-sm transition-colors inline-block"
                     >
@@ -1105,8 +1104,8 @@ export default function LandingPage() {
               <ul className="space-y-3">
                 {t.footer.links.company.items.map((item, i) => (
                   <li key={i}>
-                    <motion.a 
-                      href="#" 
+                    <motion.a
+                      href="#"
                       whileHover={{ x: 3 }}
                       className="text-white/40 hover:text-white text-sm transition-colors inline-block"
                     >
@@ -1122,8 +1121,8 @@ export default function LandingPage() {
               <ul className="space-y-3">
                 {t.footer.links.support.items.map((item, i) => (
                   <li key={i}>
-                    <motion.a 
-                      href="#" 
+                    <motion.a
+                      href="#"
                       whileHover={{ x: 3 }}
                       className="text-white/40 hover:text-white text-sm transition-colors inline-block"
                     >

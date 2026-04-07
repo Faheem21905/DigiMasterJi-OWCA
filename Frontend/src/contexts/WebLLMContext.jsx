@@ -17,35 +17,9 @@ import { useNetworkStatus } from './NetworkStatusContext';
 
 const WebLLMContext = createContext(null);
 
-// LocalStorage key to track if model was downloaded
-const MODEL_DOWNLOADED_KEY = 'webllm_model_downloaded';
-
-/**
- * Check if WebLLM model is cached by checking Cache Storage directly
- * This is more reliable than localStorage since the cache could exist
- * from a previous session where localStorage wasn't set
- */
-async function checkWebLLMCache() {
-    try {
-        if (!('caches' in window)) {
-            return false;
-        }
-
-        // WebLLM uses cache names like "webllm/model", "webllm/config", "webllm/wasm"
-        const cacheNames = await caches.keys();
-        const hasWebLLMCache = cacheNames.some(name => name.startsWith('webllm'));
-
-        if (hasWebLLMCache) {
-            console.log('[WebLLM] Found cached model in Cache Storage:',
-                cacheNames.filter(n => n.startsWith('webllm')));
-        }
-
-        return hasWebLLMCache;
-    } catch (error) {
-        console.warn('[WebLLM] Error checking cache:', error);
-        return false;
-    }
-}
+// LocalStorage key to track if user has OPTED-IN to offline mode
+// This is the source of truth - we only auto-load if user explicitly enabled offline mode
+const OFFLINE_MODE_ENABLED_KEY = 'webllm_offline_enabled';
 
 export function WebLLMProvider({ children }) {
     // WebLLM state
@@ -68,35 +42,27 @@ export function WebLLMProvider({ children }) {
     const autoLoadAttempted = useRef(false);
 
     // Check WebGPU support and auto-load cached model on mount
+    // ONLY if user has previously opted-in (clicked download)
     useEffect(() => {
         const checkSupportAndAutoLoad = async () => {
             const supported = webLLMService.isWebGPUSupported();
             setIsSupported(supported);
 
             if (supported) {
-                // First check Cache Storage directly (more reliable)
-                const hasCacheStorage = await checkWebLLMCache();
+                // Check if user has opted-in to offline mode
+                const userOptedIn = localStorage.getItem(OFFLINE_MODE_ENABLED_KEY) === 'true';
 
-                // Also check localStorage (fallback/secondary check)
-                const hasLocalStorage = localStorage.getItem(MODEL_DOWNLOADED_KEY) === 'true';
+                // Also check if model is actually cached
+                const modelActuallyCached = await webLLMService.isModelCached();
 
-                // Model is cached if either check passes
-                const modelIsCached = hasCacheStorage || hasLocalStorage;
-
-                if (modelIsCached) {
-                    // Sync localStorage with cache state
-                    if (hasCacheStorage && !hasLocalStorage) {
-                        localStorage.setItem(MODEL_DOWNLOADED_KEY, 'true');
-                        console.log('[WebLLM] Synced localStorage with detected cache');
-                    }
-
+                if (userOptedIn && modelActuallyCached) {
                     setIsModelCached(true);
 
                     // Automatically initialize the model from cache 
-                    // (only if we haven't already tried)
+                    // (only if user opted-in AND we haven't already tried)
                     if (!autoLoadAttempted.current && !initRef.current) {
                         autoLoadAttempted.current = true;
-                        console.log('[WebLLM] Model cache detected, auto-loading...');
+                        console.log('[WebLLM] User opted-in and model cached, auto-loading...');
 
                         // Auto-initialize in background
                         webLLMService.initialize((progress) => {
@@ -106,21 +72,26 @@ export function WebLLMProvider({ children }) {
                             if (success) {
                                 console.log('[WebLLM] Auto-loaded model from cache');
                                 setLoadingText('');
-                                localStorage.setItem(MODEL_DOWNLOADED_KEY, 'true');
                             } else {
-                                // Model might have been cleared, update localStorage
+                                // Model might have been cleared externally
                                 console.warn('[WebLLM] Failed to auto-load, cache might be cleared');
-                                localStorage.removeItem(MODEL_DOWNLOADED_KEY);
+                                localStorage.removeItem(OFFLINE_MODE_ENABLED_KEY);
                                 setIsModelCached(false);
                             }
                         }).catch((err) => {
                             console.error('[WebLLM] Auto-load error:', err);
-                            localStorage.removeItem(MODEL_DOWNLOADED_KEY);
+                            localStorage.removeItem(OFFLINE_MODE_ENABLED_KEY);
                             setIsModelCached(false);
                         });
                     }
+                } else if (userOptedIn && !modelActuallyCached) {
+                    // User opted in but cache was cleared externally (browser cleared storage)
+                    console.log('[WebLLM] User opted-in but no cache found, resetting opt-in');
+                    localStorage.removeItem(OFFLINE_MODE_ENABLED_KEY);
+                    setIsModelCached(false);
                 } else {
-                    console.log('[WebLLM] No cached model found');
+                    console.log('[WebLLM] User has not opted-in to offline mode');
+                    setIsModelCached(false);
                 }
             }
         };
@@ -170,8 +141,8 @@ export function WebLLMProvider({ children }) {
             if (success) {
                 setIsModelCached(true);
                 setLoadingText('');
-                // Persist download state to localStorage
-                localStorage.setItem(MODEL_DOWNLOADED_KEY, 'true');
+                // Mark that user has opted-in to offline mode
+                localStorage.setItem(OFFLINE_MODE_ENABLED_KEY, 'true');
                 console.log('[WebLLM] Model downloaded and cached successfully');
             }
 
@@ -224,14 +195,19 @@ export function WebLLMProvider({ children }) {
     }, [isModelReady]);
 
     /**
-     * Clear the model cache
+     * Clear the model cache and remove opt-in flag
+     * After this, the model will NOT auto-download on page refresh
      */
     const clearCache = useCallback(async () => {
-        await webLLMService.clearCache();
+        const success = await webLLMService.clearCache();
         setIsModelCached(false);
-        // Remove download state from localStorage
-        localStorage.removeItem(MODEL_DOWNLOADED_KEY);
-        console.log('[WebLLM] Cache cleared and localStorage updated');
+        // Remove opt-in flag - user must click download again to re-enable
+        localStorage.removeItem(OFFLINE_MODE_ENABLED_KEY);
+        // Reset the init refs so download can work again
+        initRef.current = false;
+        autoLoadAttempted.current = false;
+        console.log('[WebLLM] Cache cleared and opt-in disabled');
+        return success;
     }, []);
 
     /**

@@ -12,14 +12,15 @@
  */
 
 import * as webllm from '@mlc-ai/web-llm';
+import { hasModelInCache, deleteModelAllInfoInCache } from '@mlc-ai/web-llm';
 
 // Configuration for the offline model
-// Using a small model optimized for chat that runs well on WebGPU
-const OFFLINE_MODEL = 'gemma-2b-it-q4f32_1-MLC';
+// Using Llama 3.2 1B - small, fast, and good quality for educational tasks
+const OFFLINE_MODEL = 'Llama-3.2-1B-Instruct-q4f32_1-MLC';
 
-// Alternative smaller models if the main one doesn't work:
+// Alternative models if the main one doesn't work:
 // - 'TinyLlama-1.1B-Chat-v1.0-q4f32_1-MLC' (~0.5GB)
-// - 'RedPajama-INCITE-Chat-3B-v1-q4f32_1-MLC' (~1.5GB)
+// - 'gemma-2b-it-q4f32_1-MLC' (~1.2GB)
 
 class WebLLMService {
     constructor() {
@@ -75,18 +76,12 @@ class WebLLMService {
 
     /**
      * Check if the model is already cached in IndexedDB
-     * Note: This is a best-effort check as WebLLM API may vary
      * @returns {Promise<boolean>}
      */
     async isModelCached() {
         try {
-            // WebLLM may not have this function in all versions
-            if (typeof webllm.hasModelInCache === 'function') {
-                const hasCache = await webllm.hasModelInCache(this.modelId);
-                return hasCache;
-            }
-            // Fallback: assume not cached if function doesn't exist
-            return false;
+            const cached = await hasModelInCache(this.modelId);
+            return cached;
         } catch (error) {
             console.warn('[WebLLM] Error checking cache:', error);
             return false;
@@ -286,26 +281,43 @@ Focus on helping with educational questions only.`;
 
     /**
      * Clear the model cache to free up storage
-     * Note: This may not work in all WebLLM versions
-     * @returns {Promise<void>}
+     * Uses the proper WebLLM API to delete all model info from IndexedDB
+     * @returns {Promise<boolean>} - Returns true if cache was cleared successfully
      */
     async clearCache() {
         try {
-            // Try to delete from cache if the function exists
-            if (typeof webllm.deleteModelFromCache === 'function') {
-                await webllm.deleteModelFromCache(this.modelId);
+            console.log('[WebLLM] Clearing cache for model:', this.modelId);
+            
+            // First unload the engine if it's running
+            if (this.engine) {
+                try {
+                    await this.engine.unload();
+                    console.log('[WebLLM] Engine unloaded');
+                } catch (unloadError) {
+                    console.warn('[WebLLM] Error unloading engine:', unloadError);
+                }
+                this.engine = null;
             }
-            // Always reset local state
+            
+            // Delete all model info from cache (weights, config, wasm)
+            await deleteModelAllInfoInCache(this.modelId);
+            console.log('[WebLLM] Model cache deleted successfully');
+            
+            // Reset local state
             this.isInitialized = false;
-            this.engine = null;
+            this.loadProgress = 0;
+            this.error = null;
             this._notifyListeners();
-            console.log('[WebLLM] Cache cleared (state reset)');
+            
+            return true;
         } catch (error) {
             console.error('[WebLLM] Error clearing cache:', error);
             // Still reset local state even if cache clear fails
             this.isInitialized = false;
             this.engine = null;
+            this.loadProgress = 0;
             this._notifyListeners();
+            return false;
         }
     }
 
@@ -316,9 +328,9 @@ Focus on helping with educational questions only.`;
     getModelSize() {
         // Approximate sizes for common models
         const sizes = {
+            'Llama-3.2-1B-Instruct-q4f32_1-MLC': '~750 MB',
             'gemma-2b-it-q4f32_1-MLC': '~1.2 GB',
             'TinyLlama-1.1B-Chat-v1.0-q4f32_1-MLC': '~650 MB',
-            'RedPajama-INCITE-Chat-3B-v1-q4f32_1-MLC': '~1.8 GB',
         };
         return sizes[this.modelId] || '~1 GB';
     }

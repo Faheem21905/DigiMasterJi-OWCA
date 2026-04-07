@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { Bot, User, Copy, Check, Volume2, VolumeX, Image, FileText } from 'lucide-react';
 import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
+import rehypeRaw from 'rehype-raw';
 import AudioPlayer from './AudioPlayer';
 
 /**
@@ -214,6 +215,7 @@ export default function MessageBubble({
           ) : (
             <div className="text-sm sm:text-base leading-relaxed prose prose-invert prose-sm max-w-none">
               <ReactMarkdown
+                rehypePlugins={[rehypeRaw]}
                 components={{
                   // Style paragraphs
                   p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
@@ -237,6 +239,10 @@ export default function MessageBubble({
                   pre: ({ children }) => <pre className="bg-white/[0.05] p-3 rounded-xl overflow-x-auto mb-2 border border-white/[0.05]">{children}</pre>,
                   // Style blockquotes
                   blockquote: ({ children }) => <blockquote className="border-l-2 border-orange-400/50 pl-3 italic text-white/70">{children}</blockquote>,
+                  // Superscript for math expressions (e.g., x²)
+                  sup: ({ children }) => <sup className="text-[0.75em] align-super text-cyan-300">{children}</sup>,
+                  // Subscript for chemical formulas (e.g., H₂O)
+                  sub: ({ children }) => <sub className="text-[0.75em] align-sub text-cyan-300">{children}</sub>,
                 }}
               >
                 {message.content}

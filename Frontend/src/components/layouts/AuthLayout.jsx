@@ -142,7 +142,7 @@ export default function AuthLayout({ children }) {
         transition={{ duration: 0.6, delay: 0.4 }}
         className="mt-10 text-sm text-white/30 z-10"
       >
-        © 2025 DigiMasterJi. Bridging the education gap with AI.
+        © 2026 DigiMasterJi. Bridging the education gap with AI.
       </motion.p>
     </div>
   );
